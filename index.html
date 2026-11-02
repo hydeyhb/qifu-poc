@@ -62,10 +62,19 @@ button{font:inherit;color:inherit}
 .scene{position:absolute;inset:0;overflow:hidden;background:#2A1C16 url("assets/temple.jpg") center/cover no-repeat;transition:background-position .45s var(--ease)}
 .scene::after{content:"";position:absolute;left:0;right:0;bottom:0;height:30%;background:linear-gradient(rgba(20,12,9,0),rgba(20,12,9,.28));pointer-events:none}
 .media.crop .scene{background-position:center 92%}
-.scene .figure{bottom:auto;z-index:2;width:50px;height:75px;filter:drop-shadow(0 3px 5px rgba(0,0,0,.5))}
-.media.crop .scene .figure{width:44px;height:66px}
-.figure.walk svg{animation:step .32s ease-in-out infinite alternate}
-@keyframes step{from{transform:translateY(0)}to{transform:translateY(-3px)}}
+/* Q 版香客：走進來時左右搖晃，到定點合掌低頭 */
+.scene .figure{bottom:auto;z-index:2;width:calc(56px * var(--s,1));height:calc(77px * var(--s,1));transition:left 2.3s linear,opacity .6s;filter:drop-shadow(0 4px 5px rgba(0,0,0,.45))}
+.media.crop .scene .figure{width:calc(46px * var(--s,1));height:calc(63px * var(--s,1))}
+.scene .figure svg{transform-origin:50% 96%}
+.scene .figure.walk svg{animation:wobble .36s ease-in-out infinite alternate}
+@keyframes wobble{from{transform:rotate(-6deg) translateY(0)}to{transform:rotate(6deg) translateY(-3px)}}
+.scene .figure .arm{transform-box:fill-box;transform-origin:50% 12%;transition:transform .5s var(--ease)}
+.scene .figure.bow svg{transform:none}
+.scene .figure.bow .head{transform:translateY(5px)}
+.scene .figure.bow .arm.l{transform:rotate(-24deg)}
+.scene .figure.bow .arm.r{transform:rotate(24deg)}
+.scene .figure.mine::before{content:"";position:absolute;left:50%;bottom:-4px;width:120%;height:16px;transform:translateX(-50%);border-radius:50%;background:radial-gradient(ellipse,rgba(255,214,120,.85),rgba(255,214,120,0) 70%)}
+.scene .figure .me{color:#3A2208;background:var(--gold);border-radius:999px;padding:0 8px;line-height:18px;top:-22px}
 .scene .plaque{top:auto;max-width:50%;width:auto;transform:translateY(-4px);font-size:14px;padding:4px 10px}
 .scene .plaque.on{transform:none}
 .scene .plaque small{display:block;margin:0}
@@ -249,7 +258,7 @@ function sizeMedia(){
   const w = $('#media').clientWidth;
   const crop = S.step === 'card' && S.mode === 'photo'; // 寫卡頁只留殿前地面一條，讓卡片資訊好讀
   $('#media').classList.toggle('crop', crop);
-  $('#media').style.height = crop ? '150px' : Math.max(200, Math.round(w * 9 / 16)) + 'px';
+  $('#media').style.height = crop ? '170px' : Math.max(260, Math.round(w * 0.85)) + 'px';
   $('#app').classList.toggle('nosticky', window.innerHeight < 560);
 }
 function uiState(){
@@ -322,45 +331,80 @@ function loadYT(){
   document.head.appendChild(s);
 }
 
-/* ===== 殿前剪紙香客 ===== */
+/* ===== 殿前香客（Q 版背影，球狀漸層做出立體感） ===== */
 const actors = [];
-function figure(fill){
-  // 平面剪紙：頭、髮髻、肩背、合掌輪廓、坐墊。不畫五官與衣紋
-  return `<svg viewBox="0 0 40 60" aria-hidden="true">
-    <ellipse cx="20" cy="56" rx="17" ry="3.6" fill="#5A2018" stroke="#C99B54" stroke-width="1"/>
-    <path d="M3 55 C3 44 7 36.5 13.5 34.5 L26.5 34.5 C33 36.5 37 44 37 55 Z" fill="${fill}" stroke="#C99B54" stroke-width="1.4" stroke-linejoin="round"/>
-    <path d="M15 34.5 L20 40 L25 34.5" fill="none" stroke="#C99B54" stroke-width="1.2" stroke-linejoin="round"/>
-    <path d="M20 40 L20 55" stroke="rgba(201,155,84,.45)" stroke-width="1"/>
-    <rect x="17" y="29.5" width="6" height="5.5" fill="#161010"/>
+// 六種香客：髮色、上衣、褲子、配件
+const PEOPLE = [
+  { kind:'阿嬤',   hair:'#E4E0D8', top:'#8E6BB0', pants:'#4B4E63', acc:'bun' },
+  { kind:'阿公',   hair:'#B8B2A8', top:'#4F7A5C', pants:'#3E3A36', acc:'none' },
+  { kind:'女生',   hair:'#4A3026', top:'#E58FA0', pants:'#3F5A82', acc:'pony' },
+  { kind:'男人',   hair:'#2B211C', top:'#C8483A', pants:'#2F3440', acc:'cap', cap:'#3E6FB0' },
+  { kind:'小孩',   hair:'#2E2420', top:'#F2B33D', pants:'#4E7FB8', acc:'buns', scale:.8 },
+  { kind:'戴帽子', hair:'#3A2E28', top:'#5C8FA8', pants:'#4A4038', acc:'hat', cap:'#D8C39A' }
+];
+let uid = 0;
+const shade = (id, base, light, dark) =>
+  `<radialGradient id="${id}" cx="38%" cy="30%" r="75%"><stop offset="0" stop-color="${light}"/><stop offset=".55" stop-color="${base}"/><stop offset="1" stop-color="${dark}"/></radialGradient>`;
+function tint(hex, amt){ // amt>0 變亮，<0 變暗
+  const n = parseInt(hex.slice(1), 16), f = c => Math.max(0, Math.min(255, Math.round(c + (amt > 0 ? (255 - c) : c) * amt)));
+  return '#' + [f(n >> 16), f((n >> 8) & 255), f(n & 255)].map(v => v.toString(16).padStart(2, '0')).join('');
+}
+function person(p){
+  const k = 'g' + (++uid), sk = '#F0C9A8';
+  const g = (name, c) => shade(k + name, c, tint(c, .45), tint(c, -.35));
+  const acc = {
+    bun:  `<circle cx="30" cy="9" r="7.5" fill="url(#${k}h)"/>`,
+    pony: `<ellipse cx="30" cy="44" rx="6" ry="11" fill="url(#${k}h)"/>`,
+    buns: `<circle cx="16" cy="12" r="6" fill="url(#${k}h)"/><circle cx="44" cy="12" r="6" fill="url(#${k}h)"/>`,
+    cap:  `<path d="M12.6 24 A17.4 17.4 0 0 1 47.4 24 Q30 20 12.6 24 Z" fill="url(#${k}c)"/><rect x="25" y="20.5" width="10" height="3.2" rx="1.6" fill="${tint(p.cap||'#3E6FB0', -.35)}"/>`,
+    hat:  `<ellipse cx="30" cy="20" rx="23" ry="6" fill="url(#${k}c)"/><path d="M15 20 Q16 5 30 5 Q44 5 45 20 Z" fill="url(#${k}c)"/>`,
+    none: ''
+  }[p.acc];
+  return `<svg viewBox="0 0 60 82" aria-hidden="true"><defs>${g('h', p.hair)}${g('t', p.top)}${g('p', p.pants)}${g('s', sk)}${p.cap ? g('c', p.cap) : ''}</defs>
+    <ellipse cx="30" cy="78.5" rx="17" ry="3.2" fill="rgba(0,0,0,.32)"/>
+    <g class="legs"><rect x="20" y="60" width="9" height="16" rx="4.5" fill="url(#${k}p)"/><rect x="31" y="60" width="9" height="16" rx="4.5" fill="url(#${k}p)"/>
+      <ellipse cx="24.5" cy="77" rx="5.5" ry="3" fill="#3A2C26"/><ellipse cx="35.5" cy="77" rx="5.5" ry="3" fill="#3A2C26"/></g>
+    <g class="arm l"><ellipse cx="13" cy="50" rx="4.6" ry="10" fill="url(#${k}t)"/></g>
+    <g class="arm r"><ellipse cx="47" cy="50" rx="4.6" ry="10" fill="url(#${k}t)"/></g>
+    <rect x="13" y="38" width="34" height="27" rx="13" fill="url(#${k}t)"/>
     <g class="head">
-      <circle cx="20" cy="21" r="8.8" fill="#161010" stroke="#C99B54" stroke-width="1.2"/>
-      <circle cx="20" cy="10.6" r="3.6" fill="#161010" stroke="#C99B54" stroke-width="1.2"/>
+      <circle cx="13.2" cy="28" r="3" fill="url(#${k}s)"/><circle cx="46.8" cy="28" r="3" fill="url(#${k}s)"/>
+      ${p.acc === 'pony' ? '' : ''}
+      <circle cx="30" cy="25" r="17.4" fill="url(#${k}h)"/>
+      ${acc}
     </g>
   </svg>`;
 }
-// 站位依照這張正殿照片的地面挑選：避開神像正前方與香爐，腳踩在畫面下緣的地板上
-const SLOTS = [{ x:61, b:3 }, { x:22, b:2 }, { x:79, b:4 }];
+// 站位依這張正殿照片（框高約為寬的 0.85 倍）的地面挑選：避開神像正前方，腳踩在畫面下緣的地板上；s 為遠近比例
+const SLOTS = [{ x:66, b:3, s:1 }, { x:13, b:2, s:1 }, { x:86, b:5, s:.92 }, { x:38, b:1, s:1.05 }];
 const slotX = i => SLOTS[i]?.x ?? 50;
+const MAX_ACTORS = 4;
+function place(a){
+  const sl = SLOTS[a.slot] || SLOTS[0];
+  a.el.style.bottom = sl.b + '%';
+  a.el.style.setProperty('--s', (sl.s || 1) * (a.p.scale || 1));
+}
 function walkTo(a, x){
   a.el.classList.add('walk');
   a.el.style.left = x + '%';
-  clearTimeout(a.walkT); a.walkT = setTimeout(() => a.el.classList.remove('walk'), 1150);
+  clearTimeout(a.walkT); a.walkT = setTimeout(() => a.el.classList.remove('walk'), 2300);
 }
 function addActor({ mine=false }){
   const live = actors.filter(a => !a.leaving);
-  if (live.length >= 3 && !mine) { bumpOverflow(); return null; }
-  const el = document.createElement('div');
-  el.className = 'figure';
-  el.innerHTML = figure(mine ? '#9A3A2E' : '#7A2A24') + (mine ? '<span class="me">你</span>' : '');
+  if (live.length >= MAX_ACTORS && !mine) { bumpOverflow(); return null; }
   const used = live.map(x => x.slot);
-  const a = { el, mine, leaving:false, slot: mine ? 0 : ([1,2,0].find(s => !used.includes(s)) ?? 1) };
+  const p = PEOPLE[Math.floor(Math.random() * PEOPLE.length)];
+  const el = document.createElement('div');
+  el.className = 'figure' + (mine ? ' mine' : '');
+  el.innerHTML = person(p) + (mine ? '<span class="me">你</span>' : '');
+  const a = { el, p, mine, leaving:false, slot: mine ? 0 : ([1,2,3,0].find(s => !used.includes(s)) ?? 1) };
   // 從畫面外走進殿內：從離站位較近的左右邊緣入場
-  el.style.left = slotX(a.slot) < 50 ? '-14%' : '114%';
-  el.style.bottom = (SLOTS[a.slot]?.b ?? 3) + '%';
+  el.style.left = slotX(a.slot) < 50 ? '-16%' : '116%';
+  place(a);
   $('#scene').appendChild(el);
   if (mine) {
     const o = live.find(x => x.slot === 0);
-    if (o) { o.slot = [1,2].find(s => !used.includes(s)) ?? 1; o.el.style.bottom = SLOTS[o.slot].b + '%'; walkTo(o, slotX(o.slot)); }
+    if (o) { o.slot = [1,2,3].find(s => !used.includes(s)) ?? 1; place(o); walkTo(o, slotX(o.slot)); }
   }
   actors.push(a);
   requestAnimationFrame(() => requestAnimationFrame(() => walkTo(a, slotX(a.slot))));
@@ -382,8 +426,8 @@ function bow(a){ a.el.classList.add('bow'); }
 function leave(a, ms){
   setTimeout(() => {
     a.leaving = true; a.el.classList.remove('bow');
-    walkTo(a, slotX(a.slot) < 50 ? -14 : 114); a.el.classList.add('out');
-    setTimeout(() => { a.el.remove(); const i = actors.indexOf(a); if (i > -1) actors.splice(i, 1); }, 1200);
+    walkTo(a, slotX(a.slot) < 50 ? -16 : 116); setTimeout(() => a.el.classList.add('out'), 1600);
+    setTimeout(() => { a.el.remove(); const i = actors.indexOf(a); if (i > -1) actors.splice(i, 1); }, 2400);
   }, ms);
 }
 let ovN = 0, ovT = null;
