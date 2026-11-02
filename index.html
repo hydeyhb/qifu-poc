@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#F7F3EC">
 <title>北港朝天宮・殿前祈福</title>
+<link rel="preconnect" href="https://lifemap.miniapp.tw">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&family=Noto+Serif+TC:wght@600;700&display=swap">
@@ -29,7 +30,7 @@
 html{-webkit-text-size-adjust:100%}
 body{margin:0;background:#E9E2D8;color:var(--wood);font:400 16px/1.65 var(--sans)}
 button{font:inherit;color:inherit}
-.app{max-width:440px;margin:0 auto;min-height:100dvh;background:var(--paper);position:relative;padding-bottom:calc(118px + env(safe-area-inset-bottom,0px))}
+.app{max-width:440px;margin:0 auto;min-height:100dvh;background:var(--paper);position:relative;padding-bottom:calc(140px + env(safe-area-inset-bottom,0px))}
 .app.nosticky{padding-bottom:24px}
 
 /* 頁首（不固定：固定頁首捲動時會蓋到直播播放器） */
@@ -130,7 +131,7 @@ button{font:inherit;color:inherit}
 .tabs button[aria-selected="true"]{color:var(--wood);font-weight:700}
 .tabs button[aria-selected="true"]::after{content:"";position:absolute;left:0;right:0;bottom:-1px;height:2px;background:var(--red)}
 .slips{display:flex;flex-direction:column;gap:10px}
-.slip{position:relative;display:flex;align-items:center;justify-content:space-between;gap:12px;width:100%;min-height:66px;text-align:left;border:1px solid transparent;background:var(--paper-deep);border-radius:4px;padding:12px 18px;font:600 19px/1.4 var(--serif);color:var(--wood);cursor:pointer;transition:background .2s,color .2s,transform .15s var(--ease)}
+.slip{position:relative;display:flex;align-items:center;justify-content:space-between;gap:12px;width:100%;min-height:56px;text-align:left;border:1px solid #E9C9C0;border-left:5px solid var(--red);background:#F8E7E1;border-radius:4px;padding:10px 16px;font:600 18px/1.4 var(--serif);color:var(--wood);cursor:pointer;transition:background .2s,color .2s,transform .15s var(--ease)}
 .slip:active{transform:scale(.99)}
 .slip .tick{font:700 15px var(--sans);color:var(--gold);opacity:0;transition:opacity .2s}
 .slip[aria-checked="true"]{background:var(--red);color:var(--paper);border-color:var(--gold)}
@@ -162,11 +163,17 @@ button{font:inherit;color:inherit}
 /* 底部主按鈕列（播放器在頁首；底部留白等高，不會蓋到播放器） */
 .dock{position:fixed;left:50%;bottom:0;transform:translateX(-50%);width:100%;max-width:440px;z-index:20;padding:12px 16px calc(12px + env(safe-area-inset-bottom,0px));background:var(--paper);border-top:1px solid var(--paper-deep);text-align:center}
 .app.nosticky .dock{position:static;transform:none;border-top:0}
-.cta{display:flex;align-items:center;justify-content:center;width:100%;height:58px;border:0;border-radius:10px;background:var(--red);color:#fff;font-size:18px;font-weight:700;letter-spacing:.06em;cursor:pointer;text-decoration:none;transition:background .15s,transform .15s var(--ease)}
-.cta:active{background:var(--red-press);transform:scale(.99)}
-.cta:disabled{background:var(--paper-deep);color:var(--muted);cursor:not-allowed}
+.cta{display:flex;align-items:center;justify-content:center;width:100%;height:58px;border:0;border-radius:30px;background:#E4745E;color:#fff;font-size:18px;font-weight:700;letter-spacing:.06em;box-shadow:0 6px 16px rgba(228,116,94,.35);cursor:pointer;text-decoration:none;transition:background .15s,transform .15s var(--ease)}
+.cta:active{background:#CF5F49;transform:scale(.98)}
+.cta:disabled{background:var(--paper-deep);color:var(--muted);box-shadow:none;cursor:not-allowed}
+.cta.done{box-shadow:none}
 .cta.done{background:#3F6B4E}
-.sub{display:block;margin-top:6px;font-size:13px;color:var(--muted)}
+.sub{display:block;margin-top:6px;font-size:13.5px;color:var(--wood)}
+/* 首頁三步說明：讓第一次來的人知道按下去會發生什麼 */
+.steps3{display:flex;justify-content:center;align-items:center;flex-wrap:nowrap;gap:4px 8px;margin:0 0 10px;padding:0;list-style:none;font-size:14px;color:var(--wood)}
+.steps3 li{display:flex;align-items:center;gap:5px;white-space:nowrap}
+.steps3 li + li::before{content:"›";color:var(--muted);margin-right:5px}
+.steps3 b{width:20px;height:20px;border-radius:50%;background:#E4745E;color:#fff;font-size:12px;display:inline-flex;align-items:center;justify-content:center}
 .back{display:block;margin:18px auto 0;border:0;background:none;color:var(--muted);font-size:15px;padding:10px;cursor:pointer}
 .cta:focus-visible,.back:focus-visible,.slip:focus-visible,.tabs button:focus-visible,.more-link:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
 
@@ -259,10 +266,11 @@ const esc = s => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':
 let yt = null, ytReady = false, stallT = null;
 function canEmbed(){ return $('#media').clientWidth >= 300 && window.innerHeight >= 560; }
 function sizeMedia(){
+  document.querySelector('.modebar').hidden = S.step !== 'home';
   const w = $('#media').clientWidth;
-  const crop = S.step === 'card' && S.mode === 'photo'; // 寫卡頁只留殿前地面一條，讓卡片資訊好讀
+  const crop = S.step !== 'home' && S.mode === 'photo'; // 選句頁與寫卡頁只留殿前地面一條，讓籤條和卡片一進頁就看得到
   $('#media').classList.toggle('crop', crop);
-  $('#media').style.height = crop ? '170px' : Math.max(260, Math.round(w * 0.85)) + 'px';
+  $('#media').style.height = crop ? (S.step === 'bless' ? '150px' : '160px') : Math.max(260, Math.round(w * 0.85)) + 'px';
   $('#app').classList.toggle('nosticky', window.innerHeight < 560);
 }
 function uiState(){
@@ -488,7 +496,7 @@ function render(){
         </div>
         <a class="more-link" href="${CFG.groupUrl}" target="_blank" rel="noopener"><span>直接寫祈福卡</span><span aria-hidden="true">›</span></a>
       </section>`;
-    d.innerHTML = `<button class="cta" id="go" type="button">免費送一句祝福</button><span class="sub">不用打字・你的小人會走到殿前合掌</span>`;
+    d.innerHTML = `<ol class="steps3" aria-label="怎麼送祝福"><li><b>1</b>點一支籤</li><li><b>2</b>按送出</li><li><b>3</b>小人進殿合掌</li></ol><button class="cta" id="go" type="button">免費送一句祝福</button>`;
     $('#go').onclick = startBless;
   }
 
@@ -496,8 +504,7 @@ function render(){
     const t = S.topic;
     v.innerHTML = `
       <section class="sec">
-        <h2 class="h2">選一句想送出的祝福</h2>
-        <p class="lead">免登入、免付費。祝福句由廟方事先核准。</p>
+        <h2 class="h2">點一支祝福籤，再按送出</h2>
         <div class="tabs" role="tablist" aria-label="祝福主題">
           ${CFG.topics.map(x => `<button type="button" role="tab" data-t="${x.id}" aria-selected="${x.id===t.id}" ${S.sent?'disabled':''}>${x.name}</button>`).join('')}
         </div>
@@ -508,7 +515,7 @@ function render(){
       </section>`;
     d.innerHTML = S.sent
       ? `<button class="cta done" type="button" disabled style="background:#3F6B4E;color:#fff">祝福已送到殿前</button><span class="sub">接著可以把它寫成祈福卡</span>`
-      : `<button class="cta" id="send" type="button" ${S.phrase?'':'disabled'}>${S.phrase?'送出這句祝福':'先選一句祝福'}</button><span class="sub">送出後，你的小人會在殿前合掌</span>`;
+      : `<button class="cta" id="send" type="button" ${S.phrase?'':'disabled'}>${S.phrase?'送出這句祝福':'先點上面一支祝福籤'}</button><span class="sub">${S.phrase?'送出後，你的小人會在殿內合掌':'免費・祝福句由廟方事先核准'}</span>`;
     v.querySelectorAll('.tabs button').forEach(b => b.onclick = () => { S.topic = CFG.topics.find(x => x.id === b.dataset.t); S.phrase = null; render(); });
     v.querySelectorAll('.slip').forEach(b => b.onclick = () => { S.phrase = b.dataset.p; render(); });
     $('#back').onclick = () => { if (me && !S.sent) { leave(me, 0); me = null; } S.step = 'home'; render(); };
@@ -537,6 +544,7 @@ function render(){
       </section>`;
     d.innerHTML = `<button class="cta" id="apply" type="button">寫成${esc(t.product)}</button><span class="sub">會先幫你複製這句祝福，到下一頁貼上</span>`;
     $('#apply').onclick = apply;
+    prefetchApply(t.apply);
     $('#back2').onclick = () => { S.step = 'home'; S.sent = false; S.phrase = null; S.wall = null; render(); window.scrollTo({ top:0, behavior:'smooth' }); };
   }
 }
@@ -565,11 +573,15 @@ function send(){
   setTimeout(() => { if (me) { leave(me, 0); me = null; } }, 9000);
 }
 async function apply(){
-  const text = S.phrase || '';
-  let ok = false;
-  try { await navigator.clipboard.writeText(text); ok = true; } catch(e){}
-  toast(ok ? '已複製祝福，到下一頁「祈福心願」貼上' : `下一頁請貼上：${text}`);
-  setTimeout(() => { location.href = S.topic.apply; }, ok ? 900 : 2400);
+  const btn = $('#apply'); btn.disabled = true; btn.textContent = '前往填寫頁…';
+  const copy = navigator.clipboard ? navigator.clipboard.writeText(S.phrase || '').catch(() => {}) : Promise.resolve();
+  await Promise.race([copy, new Promise(r => setTimeout(r, 250))]); // 複製最多等 0.25 秒就出發
+  location.href = S.topic.apply;
+}
+// 進入寫卡頁就先預載商品填寫頁，按下去時比較快
+function prefetchApply(url){
+  if (document.querySelector(`link[rel=prefetch][href="${url}"]`)) return;
+  const l = document.createElement('link'); l.rel = 'prefetch'; l.href = url; document.head.appendChild(l);
 }
 let toastT = null;
 function toast(msg){ const t = $('#toast'); t.textContent = msg; t.classList.add('on'); clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove('on'), 2800); }
