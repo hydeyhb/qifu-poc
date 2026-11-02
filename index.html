@@ -1,0 +1,470 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>殿前即時祈福 POC</title>
+<style>
+/* 色彩沿用現有 Lifemap miniapp：粉色頁首漸層、珊瑚色主按鈕、朱紅標題 */
+:root{
+  --hdr-a:#F6E6E3; --hdr-b:#EFC8C4; --coral:#E4745E; --coral-d:#C95A45; --red:#DC2E0B;
+  --ink:#3B2E29; --muted:#7B6A61; --line:#EADBD6; --paper:#FFFFFF; --soft:#FBF3F1;
+  --stage-a:#7A4A35; --stage-b:#4A2A1E; --gold:#FFE29A;
+  --font:"Noto Sans TC","PingFang TC","Microsoft JhengHei",Roboto,sans-serif;
+  --serif:"Noto Serif TC","Songti TC","PMingLiU",serif;
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html,body{margin:0;background:#EDE3E0;color:var(--ink);font-family:var(--font);-webkit-text-size-adjust:100%}
+button{font-family:inherit}
+.app{max-width:430px;margin:0 auto;min-height:100vh;background:var(--paper);position:relative;padding-bottom:calc(92px + env(safe-area-inset-bottom,0px))}
+.app.nosticky{padding-bottom:24px}
+
+/* 頁首 */
+/* 頁首不固定：固定頁首捲動時會蓋到播放器 */
+.hdr{position:relative;height:52px;display:flex;align-items:center;justify-content:space-between;padding:0 12px;background:linear-gradient(var(--hdr-a),var(--hdr-b))}
+.logo{display:flex;align-items:center;gap:6px;color:var(--red);font-weight:900;letter-spacing:.06em;font-size:15px}
+.logo i{width:30px;height:30px;border-radius:50%;background:var(--red);color:#fff;font-style:normal;display:flex;align-items:center;justify-content:center;font-size:12px}
+.pocbtn{border:1px dashed var(--coral-d);background:rgba(255,255,255,.7);color:var(--coral-d);font-size:12px;border-radius:999px;padding:4px 10px;cursor:pointer}
+
+/* 場域列：狀態標籤放在播放器外面，不疊在播放器上 */
+.venue{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:8px 12px}
+.venue b{font-size:15px}
+.venue small{display:block;color:var(--muted);font-size:11.5px;font-weight:400}
+.chip{font-size:11.5px;font-weight:700;border-radius:999px;padding:3px 9px;white-space:nowrap;display:inline-flex;align-items:center;gap:5px;background:#F1E7E4;color:var(--muted)}
+.chip i{width:7px;height:7px;border-radius:50%;background:#B5A497}
+.chip.live{background:#FDE8E4;color:var(--red)}
+.chip.live i{background:#E5483F;animation:blink 1.4s infinite}
+@keyframes blink{50%{opacity:.3}}
+
+/* 媒體框：播放器高度 = max(200px, 寬 × 9/16)，播放器上方不放任何元素 */
+.media{position:relative;width:100%;background:#1B0E0B}
+.media .yt{width:100%;height:100%}
+.media .yt iframe{width:100%;height:100%;display:block;border:0}
+.photo{position:absolute;inset:0;background:#2A1310 center/cover no-repeat;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:8px;color:#FFF3D6;text-align:center;font-size:13px}
+.photo::before{content:"";position:absolute;inset:0;background:rgba(20,8,6,.45)}
+.photo > *{position:relative}
+.photo .play{width:52px;height:52px;border-radius:50%;background:rgba(0,0,0,.6);border:2px solid rgba(255,255,255,.85);display:flex;align-items:center;justify-content:center;cursor:pointer}
+.photo .play::before{content:"";border-left:16px solid #fff;border-top:10px solid transparent;border-bottom:10px solid transparent;margin-left:4px}
+.photo .tag{position:absolute;left:8px;top:8px;font-size:11px;background:rgba(0,0,0,.55);border-radius:999px;padding:2px 8px}
+.photo a{color:#FFE29A}
+
+/* 拜殿舞台 */
+.stage{position:relative;height:112px;background:linear-gradient(var(--stage-a),var(--stage-b));overflow:hidden;transition:height .3s}
+.stage::before{content:"";position:absolute;left:-15%;right:-15%;bottom:-48px;height:100px;border-radius:50%;background:radial-gradient(ellipse at 50% 30%,#A06A4E,var(--stage-a) 70%)}
+.stage::after{content:"";position:absolute;left:0;right:0;top:0;height:10px;background:linear-gradient(rgba(27,14,11,.9),rgba(27,14,11,0))}
+.stage .mat{position:absolute;bottom:8px;width:56px;height:12px;border-radius:50%;background:#B0402F;box-shadow:inset 0 -2px 0 rgba(0,0,0,.25);transform:translateX(-50%)}
+.online small{color:var(--coral-d)}
+.av{position:absolute;bottom:10px;width:42px;height:57px;transform:translateX(-50%);transition:left 1.2s ease,opacity .5s;z-index:2}
+.av svg{width:100%;height:100%;overflow:visible;transform-origin:50% 90%;transition:transform .5s}
+.av.bow svg{transform:rotate(-10deg) translateY(2px)}
+.av.mine svg .body{filter:drop-shadow(0 0 4px rgba(255,214,120,.95))}
+.av .who{position:absolute;top:-14px;left:50%;transform:translateX(-50%);font-size:10px;font-weight:700;color:var(--gold);white-space:nowrap}
+.av.out{opacity:0}
+.say{position:absolute;bottom:66px;transform:translateX(-50%);background:#FFFDF8;color:var(--ink);font-size:11px;line-height:1.35;padding:4px 8px;border-radius:8px;max-width:46%;width:max-content;text-align:center;box-shadow:0 1px 4px rgba(0,0,0,.35);z-index:4;opacity:0;transition:opacity .3s}
+.say.on{opacity:1}
+.say small{display:block;color:var(--muted);font-size:9.5px}
+.say::after{content:"";position:absolute;left:50%;bottom:-5px;margin-left:-5px;border:5px solid transparent;border-top-color:#FFFDF8;border-bottom:0}
+.light{position:absolute;width:14px;height:14px;border-radius:50%;background:radial-gradient(circle,#FFF6D8,#FFD47A 50%,rgba(255,180,80,0) 72%);box-shadow:0 0 12px 5px rgba(255,214,120,.7);transform:translateX(-50%);z-index:3;pointer-events:none}
+.more{position:absolute;left:8px;top:6px;font-size:11px;color:#FFE9B8;z-index:3}
+.stage.slim{height:76px}
+
+/* 內容區 */
+.sec{padding:12px}
+.card{border:1px solid var(--line);border-radius:12px;background:var(--soft);padding:12px}
+.stat .n{font-family:var(--serif);font-size:22px;font-weight:900;color:var(--red);font-variant-numeric:tabular-nums}
+.stat .l{font-size:12px;color:var(--muted)}
+.wish{border-top:1px dashed var(--line);margin-top:8px;padding-top:8px;font-size:13.5px}
+.wish small{display:block;color:var(--muted);font-size:11px}
+.demo{font-size:10.5px;color:var(--coral-d);border:1px dashed var(--coral);border-radius:4px;padding:0 4px;margin-left:4px;vertical-align:1px;white-space:nowrap}
+.btn{display:block;width:100%;border:0;border-radius:30px;padding:12px 14px;font-size:15.5px;font-weight:700;text-align:center;cursor:pointer;text-decoration:none}
+.btn small{display:block;font-size:11.5px;font-weight:400;opacity:.92;margin-top:1px}
+.btn.pri{background:var(--coral);color:#fff}
+.btn.pri:disabled{background:#E2D5C3;color:var(--muted);cursor:not-allowed}
+.btn.sec{background:#fff;color:var(--coral-d);border:1.5px solid var(--coral)}
+.btn.ghost{background:none;color:var(--muted);font-weight:500;font-size:13.5px;padding:8px}
+.btn:focus-visible,.pill:focus-visible,.phrase:focus-visible,.pocbtn:focus-visible{outline:3px solid #F2B8AC;outline-offset:2px}
+.h{font-family:var(--serif);font-weight:900;color:var(--red);font-size:18px;margin:0 0 4px}
+.sub{color:var(--muted);font-size:13px;margin:0 0 10px;line-height:1.5}
+.stack{display:flex;flex-direction:column;gap:10px}
+
+/* 底部固定按鈕（不覆蓋播放器：播放器在頁首，底部有等高留白） */
+.dock{position:fixed;left:50%;transform:translateX(-50%);bottom:0;width:100%;max-width:430px;padding:10px 12px calc(12px + env(safe-area-inset-bottom,0px));background:linear-gradient(rgba(255,255,255,0),#fff 28%);z-index:15}
+.app.nosticky .dock{position:static;transform:none;background:none}
+
+/* 送祝福面板 */
+.pills{display:flex;gap:8px;flex-wrap:wrap}
+.pill{border:1.5px solid var(--line);background:#fff;border-radius:999px;padding:7px 14px;font-size:14px;cursor:pointer;color:var(--ink)}
+.pill[aria-pressed="true"]{border-color:var(--coral);background:#FDEDE9;color:var(--coral-d);font-weight:700}
+.phrase{display:flex;align-items:center;gap:10px;width:100%;text-align:left;border:1.5px solid var(--line);background:#fff;border-radius:12px;padding:11px 12px;font-size:15px;cursor:pointer;color:var(--ink)}
+.phrase .dot{width:16px;height:16px;border-radius:50%;border:2px solid var(--coral);flex:0 0 16px}
+.phrase[aria-checked="true"]{border-color:var(--coral);background:#FDEDE9}
+.phrase[aria-checked="true"] .dot{background:var(--coral);box-shadow:inset 0 0 0 3px #fff}
+.status{font-size:13px;border-radius:10px;padding:8px 10px;background:#F4EEEC;color:var(--muted)}
+.status.ok{background:#E7F0E8;color:#35593F}
+.status.warn{background:#FBF0DC;color:#7A5418}
+
+/* 祈福卡預覽（示意，正式卡版型以現有商品為準） */
+.pcard{border:1px solid #D8C3A5;border-radius:10px;background:#F2E8D9;display:grid;grid-template-columns:32% 1fr;min-height:112px;overflow:hidden;position:relative}
+.pcard .lp{background:#A44F49;color:#F2E8D9;display:flex;align-items:center;justify-content:center;font-family:var(--serif);font-size:22px;writing-mode:vertical-rl;letter-spacing:.2em}
+.pcard .rp{padding:10px 12px;font-size:13px;line-height:1.6;color:#604B43}
+.pcard .rp b{font-family:var(--serif);font-size:15px}
+.pcard .pv{position:absolute;right:6px;top:6px;font-size:10.5px;background:#fff;color:var(--muted);border-radius:999px;padding:1px 7px}
+.steps{margin:0;padding-left:20px;font-size:13px;color:var(--muted);line-height:1.7}
+.toast{position:fixed;left:50%;bottom:110px;transform:translateX(-50%);background:rgba(40,25,20,.92);color:#fff;font-size:13px;padding:8px 14px;border-radius:999px;z-index:40;opacity:0;transition:opacity .3s;pointer-events:none;max-width:90%}
+.toast.on{opacity:1}
+
+/* POC 控制面板（只給內部討論用） */
+.poc{position:fixed;inset:0;z-index:50;background:rgba(0,0,0,.35);display:flex;align-items:flex-start;justify-content:center;padding-top:60px}
+.poc .box{background:#fff;border-radius:14px;width:min(400px,92%);padding:14px;font-size:13.5px;box-shadow:0 10px 30px rgba(0,0,0,.25)}
+.poc h3{margin:0 0 8px;font-size:15px}
+.poc label{display:flex;gap:8px;align-items:center;padding:5px 0}
+.poc p{color:var(--muted);font-size:12px;margin:8px 0}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+</style>
+</head>
+<body>
+<div class="app" id="app">
+  <header class="hdr">
+    <div class="logo"><i>人生</i>人生地圖 LIFEMAP</div>
+    <button class="pocbtn" id="pocBtn" type="button">POC 控制</button>
+  </header>
+
+  <div class="venue">
+    <div><b>北港朝天宮・正殿</b><small class="online" id="online"></small></div>
+    <span class="chip" id="liveChip"><i></i><span>連線中</span></span>
+  </div>
+
+  <div class="media" id="media">
+    <div class="yt" id="yt"></div>
+    <div class="photo" id="photo" hidden></div>
+  </div>
+
+  <div class="stage" id="stage">
+    <span class="mat" style="left:24%"></span><span class="mat" style="left:50%"></span><span class="mat" style="left:76%"></span>
+    <span class="more" id="more"></span>
+  </div>
+
+  <main id="view"></main>
+
+  <div class="dock" id="dock"></div>
+</div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+/* ===== 設定 ===== */
+const CFG = {
+  videoId: 'B12MobI0EGg',
+  youtubeUrl: 'https://www.youtube.com/live/B12MobI0EGg',
+  photo: 'https://i.ytimg.com/vi/B12MobI0EGg/hqdefault.jpg', // 正式版改用廟方核准的正殿照片
+  groupUrl: 'https://lifemap.miniapp.tw/home/group/0P2-KwZoI4KhX5lp6miq/',
+  topics: [
+    { id:'study', name:'學業', product:'金榜題名祈福卡', card:'金榜',
+      apply:'https://lifemap.miniapp.tw/home/group/0P2-KwZoI4KhX5lp6miq/apply/item/0OjUzsvZSiV2nNhPtu8p/?neworder=true',
+      phrases:['願考試順利，金榜題名','願讀書專注，心定不慌','願努力都有好結果'] },
+    { id:'career', name:'事業', product:'業績長紅祈福卡', card:'事業',
+      apply:'https://lifemap.miniapp.tw/home/group/0P2-KwZoI4KhX5lp6miq/apply/item/0P1f6x1i2RH_NpRKm0FD/?neworder=true',
+      phrases:['願工作順心，貴人相助','願生意興隆，訂單滿滿','願升遷順利，一路長紅'] }
+  ]
+};
+// 其他香客的事件在正式版來自後端 venue_event；POC 以本機模擬
+const OTHERS = ['願考試順利，金榜題名','願工作順心，貴人相助','願讀書專注，心定不慌','願生意興隆，訂單滿滿','願努力都有好結果'];
+const COLORS = ['#5B6E8C','#4F7A5A','#B8A06A','#7C5A8C'];
+
+/* ===== 狀態 ===== */
+const S = {
+  step: 'home',            // home | bless | card
+  topic: CFG.topics[0], phrase: null,
+  sent: false, wall: null, // wall: waiting | played | unconfirmed
+  source: 'live',          // 後端判定：live | offline | unknown | none（POC 預設 live）
+  player: 'loading',       // 本機：loading | playing | blocked | error | stalled
+  force: 'auto', simOthers: true,
+  online: 7, today: { wishes: 36, blessings: 58 }
+};
+const $ = s => document.querySelector(s);
+const esc = s => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+
+/* ===== 媒體框：尺寸與五種狀態 ===== */
+let ytPlayer = null, ytReady = false, stallTimer = null, blockTimer = null;
+function canEmbed(){ const w = $('#media').clientWidth; return w >= 300 && window.innerHeight >= 560; }
+function sizeMedia(){
+  const w = $('#media').clientWidth;
+  $('#media').style.height = Math.max(200, Math.round(w * 9 / 16)) + 'px';
+  $('#app').classList.toggle('nosticky', window.innerHeight < 560);
+}
+function uiState(){
+  if (S.force !== 'auto') return S.force;
+  if (S.source === 'none') return 'none';
+  if (!canEmbed()) return 'small';
+  if (S.source === 'offline') return 'offline';
+  if (S.player === 'playing') return 'live';
+  if (S.player === 'blocked') return 'blocked';
+  if (S.player === 'error' || S.player === 'stalled') return 'error';
+  return 'connecting';
+}
+function renderMedia(){
+  const st = uiState(), photo = $('#photo'), chip = $('#liveChip');
+  const showYt = st === 'live' || (st === 'connecting' && ytReady);
+  $('#yt').style.visibility = showYt ? 'visible' : 'hidden';
+  photo.hidden = showYt;
+  photo.style.backgroundImage = `url("${CFG.photo}")`;
+  const map = {
+    connecting:['連線中','', '<div>直播連線中…</div>'],
+    live:['直播中','live',''],
+    blocked:['直播中','live','<button class="play" type="button" id="playBtn" aria-label="播放直播"></button><div>點一下看直播</div>'],
+    error:['暫停','', '<div>直播暫時無法播放</div>'],
+    offline:['照片','', '<span class="tag">照片</span><div>直播暫停，先看看廟內</div>'],
+    none:['照片','', '<span class="tag">照片</span>'],
+    small:['直播中','live',`<div>螢幕較小，改到 YouTube 觀看</div><a href="${CFG.youtubeUrl}" target="_blank" rel="noopener">觀看直播 ↗</a>`]
+  }[st];
+  chip.className = 'chip ' + map[1];
+  chip.querySelector('span').textContent = map[0];
+  photo.innerHTML = map[2];
+  const pb = $('#playBtn'); if (pb) pb.onclick = () => { try{ ytPlayer.playVideo(); }catch(e){} };
+}
+window.onYouTubeIframeAPIReady = function(){
+  if (!canEmbed()) { renderMedia(); return; }
+  ytPlayer = new YT.Player('yt', {
+    videoId: CFG.videoId,
+    playerVars: { autoplay:1, mute:1, playsinline:1, rel:0, controls:1 },
+    events: {
+      onReady: e => {
+        ytReady = true; e.target.mute(); e.target.playVideo();
+        blockTimer = setTimeout(() => { if (S.player !== 'playing') { S.player = 'blocked'; renderMedia(); } }, 5000);
+        renderMedia();
+      },
+      onStateChange: e => {
+        const YS = YT.PlayerState;
+        clearTimeout(stallTimer);
+        if (e.data === YS.PLAYING) S.player = 'playing';
+        else if (e.data === YS.BUFFERING) { S.player = 'loading'; stallTimer = setTimeout(() => { S.player = 'stalled'; renderMedia(); }, 20000); }
+        else if (e.data === YS.ENDED) S.player = 'error';
+        else if (e.data === YS.PAUSED) S.player = 'blocked';
+        renderMedia();
+      },
+      onError: () => { S.player = 'error'; renderMedia(); } // 只代表本機播不了，不改 source
+    }
+  });
+};
+function loadYT(){
+  const s = document.createElement('script'); s.src = 'https://www.youtube.com/iframe_api';
+  s.onerror = () => { S.player = 'error'; renderMedia(); };
+  document.head.appendChild(s);
+}
+
+/* ===== 舞台與小人 ===== */
+const actors = [];
+function avatarSVG(color){
+  return `<svg viewBox="0 0 34 46" aria-hidden="true">
+    <ellipse cx="17" cy="43" rx="12" ry="2.5" fill="rgba(0,0,0,.35)"/>
+    <path class="body" d="M5 42 Q4 24 17 21 Q30 24 29 42 Z" fill="${color}" stroke="#FFF3DF" stroke-width="1.2"/>
+    <path d="M13 24 Q17 31 21 24" fill="none" stroke="rgba(255,255,255,.5)" stroke-width="1.2"/>
+    <circle cx="17" cy="13" r="9" fill="#2B2320" stroke="#FFF3DF" stroke-width="1.2"/>
+    <circle cx="17" cy="4.5" r="3.6" fill="#2B2320" stroke="#FFF3DF" stroke-width="1"/>
+    <path d="M10 9 Q13 6 17 6" fill="none" stroke="rgba(255,255,255,.35)" stroke-width="1.4" stroke-linecap="round"/>
+  </svg>`;
+}
+function slotX(i){ return [50, 24, 76][i] ?? 50; }
+function addActor({ mine=false, color }){
+  const live = actors.filter(a => !a.leaving);
+  if (live.length >= 3 && !mine) { bumpMore(); return null; }
+  const el = document.createElement('div');
+  el.className = 'av' + (mine ? ' mine' : '');
+  el.innerHTML = avatarSVG(mine ? '#E4745E' : color) + (mine ? '<span class="who">你</span>' : '');
+  const fromLeft = Math.random() < .5;
+  el.style.left = fromLeft ? '-10%' : '110%';
+  $('#stage').appendChild(el);
+  const a = { el, mine, leaving:false, slot:0 };
+  const used = actors.filter(x => !x.leaving).map(x => x.slot);
+  a.slot = mine ? 0 : [1,2,0].find(s => !used.includes(s)) ?? 1;
+  if (mine) { const other = actors.find(x => !x.leaving && x.slot === 0); if (other) { other.slot = [1,2].find(s => !used.includes(s)) ?? 1; other.el.style.left = slotX(other.slot) + '%'; } }
+  actors.push(a);
+  requestAnimationFrame(() => requestAnimationFrame(() => { el.style.left = slotX(a.slot) + '%'; }));
+  return a;
+}
+function say(a, text, sub){
+  // 泡泡一次只顯示一則
+  document.querySelectorAll('.say').forEach(x => x.remove());
+  const b = document.createElement('div');
+  b.className = 'say';
+  b.innerHTML = esc(text) + (sub ? `<small>${esc(sub)}</small>` : '');
+  b.style.left = Math.min(76, Math.max(24, slotX(a.slot))) + '%';
+  $('#stage').appendChild(b);
+  requestAnimationFrame(() => b.classList.add('on'));
+  setTimeout(() => { b.classList.remove('on'); setTimeout(() => b.remove(), 400); }, 5200);
+}
+function bow(a){
+  a.el.classList.add('bow');
+  const l = document.createElement('div');
+  l.className = 'light'; l.style.left = slotX(a.slot) + '%'; l.style.bottom = '50px';
+  $('#stage').appendChild(l);
+  l.animate([{ transform:'translate(-50%,0)', opacity:1 }, { transform:'translate(-50%,-34px)', opacity:0 }], { duration:1600, easing:'ease-out' }).onfinish = () => l.remove();
+}
+function leave(a, ms){
+  setTimeout(() => {
+    a.leaving = true; a.el.classList.remove('bow');
+    a.el.style.left = a.slot === 2 ? '110%' : '-10%'; a.el.classList.add('out');
+    setTimeout(() => { a.el.remove(); actors.splice(actors.indexOf(a), 1); }, 1300);
+  }, ms);
+}
+let moreN = 0, moreT = null;
+function bumpMore(){
+  moreN++; $('#more').textContent = `另有 ${moreN} 份祝福`;
+  clearTimeout(moreT); moreT = setTimeout(() => { moreN = 0; $('#more').textContent = ''; }, 20000);
+}
+function renderOnline(){
+  $('#online').innerHTML = S.online >= 3 ? `此刻有 ${S.online} 位訪客在線參與 <small>示意</small>` : '此刻，還有人正在留下祝福';
+}
+
+/* 模擬其他香客：入場 →（多半）送出合掌 → 離開；15 秒內沒送出就直接離開 */
+function simulateOther(){
+  if (!S.simOthers) return;
+  const a = addActor({ color: COLORS[Math.floor(Math.random()*COLORS.length)] });
+  if (!a) return;
+  const willSend = Math.random() < .75;
+  if (willSend) {
+    setTimeout(() => {
+      bow(a); say(a, OTHERS[Math.floor(Math.random()*OTHERS.length)], '一位香客・剛剛');
+      S.today.blessings++; if (S.step === 'home') renderView();
+      leave(a, 6500);
+    }, 2500 + Math.random()*4000);
+  } else leave(a, 15000);
+}
+function loopOthers(){ setTimeout(() => { simulateOther(); loopOthers(); }, 9000 + Math.random()*9000); }
+setInterval(() => { S.online = Math.max(2, S.online + (Math.random() < .5 ? -1 : 1)); renderOnline(); }, 7000);
+
+/* ===== 畫面 ===== */
+let me = null;
+function renderView(){
+  const v = $('#view'), d = $('#dock');
+  $('#media').hidden = S.step === 'card';
+  $('#stage').classList.toggle('slim', S.step === 'card');
+  if (S.step === 'card' && ytPlayer && ytReady) { try{ ytPlayer.pauseVideo(); }catch(e){} }
+
+  if (S.step === 'home') {
+    v.innerHTML = `
+      <section class="sec stack">
+        <div class="card stat">
+          <div class="l">今天這間廟<span class="demo">示意數字</span></div>
+          <div class="n">${S.today.wishes} 份心願・${S.today.blessings} 份祝福</div>
+          <div class="wish">「願女兒考試順利」<small>12 分鐘前上牆・已通過審核</small></div>
+          <div class="wish">「願今年業績長紅」<small>40 分鐘前上牆・已通過審核</small></div>
+        </div>
+        <a class="btn sec" href="${CFG.groupUrl}" target="_blank" rel="noopener">直接寫祈福卡</a>
+        <p class="sub" style="text-align:center;margin:0">祈福卡在原本的商品頁填寫，金榜題名、業績長紅兩款可選</p>
+      </section>`;
+    d.innerHTML = `<button class="btn pri" id="toBless" type="button">免費送一句祝福<small>你的小人會走到殿前合掌</small></button>`;
+    $('#toBless').onclick = startBless;
+  }
+
+  if (S.step === 'bless') {
+    const t = S.topic;
+    v.innerHTML = `
+      <section class="sec stack" aria-label="送一句祝福">
+        <div>
+          <h2 class="h">送一句祝福</h2>
+          <p class="sub">免登入、免付費。選一句，送到殿前與祈福牆。</p>
+        </div>
+        <div class="pills" role="group" aria-label="祝福主題">
+          ${CFG.topics.map(x => `<button type="button" class="pill" data-t="${x.id}" aria-pressed="${x.id===t.id}" ${S.sent?'disabled':''}>${x.name}</button>`).join('')}
+        </div>
+        <div class="stack" role="radiogroup" aria-label="祝福句">
+          ${t.phrases.map(p => `<button type="button" class="phrase" role="radio" aria-checked="${p===S.phrase}" data-p="${esc(p)}" ${S.sent?'disabled':''}><span class="dot"></span>${esc(p)}</button>`).join('')}
+        </div>
+        ${S.sent ? `<div class="status ${S.wall==='played'?'ok':''}" id="wallStatus">${wallText()}</div>` : `<p class="sub" style="margin:0">句子由廟方事先核准；送出後，你的小人會在上方殿前合掌。</p>`}
+        <button class="btn ghost" type="button" id="backHome">先不用，回到殿前</button>
+      </section>`;
+    d.innerHTML = S.sent
+      ? `<button class="btn pri" type="button" disabled>已送出</button>`
+      : `<button class="btn pri" id="sendBtn" type="button" ${S.phrase?'':'disabled'}>${S.phrase?'送出這句祝福':'先選一句祝福'}</button>`;
+    v.querySelectorAll('.pill').forEach(b => b.onclick = () => { S.topic = CFG.topics.find(x => x.id === b.dataset.t); S.phrase = null; renderView(); });
+    v.querySelectorAll('.phrase').forEach(b => b.onclick = () => { S.phrase = b.dataset.p; renderView(); });
+    $('#backHome').onclick = () => { if (me && !S.sent) { leave(me, 0); me = null; } S.step = 'home'; renderView(); };
+    const sb = $('#sendBtn'); if (sb) sb.onclick = sendBless;
+  }
+
+  if (S.step === 'card') {
+    const t = S.topic;
+    v.innerHTML = `
+      <section class="sec stack" aria-label="寫成祈福卡">
+        <div class="status ${S.wall==='played'?'ok':''}" id="wallStatus">${wallText()}</div>
+        <div>
+          <h2 class="h">把剛才的祝福，留在祈福牆上更久</h2>
+          <p class="sub">快速祝福只短暫出現；寫成${esc(t.product)}，經審核後會加入祈福牆的卡片輪播。</p>
+        </div>
+        <div class="pcard"><div class="lp">${esc(t.card)}</div>
+          <div class="rp"><b>北港朝天宮・文昌殿</b><br>祈福人：你的名字<br>${esc(S.phrase)}</div>
+          <span class="pv">預覽・尚未送出</span></div>
+        <ol class="steps">
+          <li>下一頁是原本的${esc(t.product)}填寫頁</li>
+          <li>填祈福人姓名、Email、祈福對象，貼上剛才的祝福</li>
+          <li>選擇祈福心意金後送出，付款完成即產生祈福卡</li>
+        </ol>
+        <button class="btn ghost" type="button" id="backHome2">先不用，回到殿前</button>
+      </section>`;
+    d.innerHTML = `<button class="btn pri" id="goApply" type="button">寫成${esc(t.product)}<small>會先幫你複製這句祝福</small></button>`;
+    $('#goApply').onclick = goApply;
+    $('#backHome2').onclick = () => { S.step = 'home'; S.sent = false; S.phrase = null; S.wall = null; renderView(); };
+  }
+}
+function wallText(){
+  return { waiting:'已送出・祈福牆等候播放中', played:'抬頭看看，你的祝福正在祈福牆上（示意）', unconfirmed:'祝福已送出，目前無法確認牆面展示' }[S.wall] || '祝福已送出';
+}
+
+/* ===== 流程 ===== */
+function startBless(){
+  S.step = 'bless'; S.sent = false; S.phrase = null; S.wall = null;
+  if (!me || me.leaving) me = addActor({ mine:true });
+  renderView();
+  // 讓殿前（播放器＋舞台）留在畫面上方，選句面板接在下面
+  window.scrollTo({ top: $('#media').offsetTop - 8, behavior:'smooth' });
+}
+function sendBless(){
+  if (!S.phrase || S.sent) return;
+  S.sent = true; S.wall = 'waiting'; S.today.blessings++;
+  if (!me || me.leaving) me = addActor({ mine:true });
+  setTimeout(() => { bow(me); say(me, S.phrase, '你的祝福'); }, 300);
+  renderView();
+  // 正式版依牆端回報 wall_played；POC 以 3 秒模擬
+  setTimeout(() => { S.wall = 'played'; const ws = $('#wallStatus'); if (ws) { ws.textContent = wallText(); ws.className = 'status ok'; } }, 3000);
+  setTimeout(() => { S.step = 'card'; renderView(); window.scrollTo({ top:0, behavior:'smooth' }); }, 1800);
+  setTimeout(() => { if (me) { leave(me, 0); me = null; } }, 9000);
+}
+async function goApply(){
+  const text = S.phrase || '';
+  let copied = false;
+  try { await navigator.clipboard.writeText(text); copied = true; } catch(e) {}
+  toast(copied ? '已複製祝福，到下一頁「祈福心願」貼上即可' : `請在下一頁貼上：${text}`);
+  setTimeout(() => { location.href = S.topic.apply; }, copied ? 900 : 2200);
+}
+let toastT = null;
+function toast(msg){ const t = $('#toast'); t.textContent = msg; t.classList.add('on'); clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove('on'), 2600); }
+
+/* ===== POC 控制 ===== */
+$('#pocBtn').onclick = () => {
+  const box = document.createElement('div');
+  box.className = 'poc';
+  const opts = [['auto','自動（依實際播放）'],['live','直播中'],['connecting','連線中'],['blocked','手機擋自動播放'],['error','本機播不了'],['offline','廟方直播暫停'],['none','這間廟沒有直播'],['small','螢幕太小']];
+  box.innerHTML = `<div class="box" role="dialog" aria-label="POC 控制">
+    <h3>直播狀態</h3>
+    ${opts.map(([v,l]) => `<label><input type="radio" name="f" value="${v}" ${S.force===v?'checked':''}> ${l}</label>`).join('')}
+    <h3 style="margin-top:10px">其他香客</h3>
+    <label><input type="checkbox" id="simChk" ${S.simOthers?'checked':''}> 模擬其他香客入場與送祝福</label>
+    <button type="button" class="btn sec" id="simNow" style="margin-top:6px">現在來一位香客</button>
+    <p>本頁是 POC：人數、統計、牆面播放回報與其他香客都是本機模擬；正式版由後端事件提供。直播為北港朝天宮正殿 YouTube 直播，播放器上方不疊任何元素。</p>
+    <button type="button" class="btn pri" id="pocClose">關閉</button></div>`;
+  document.body.appendChild(box);
+  box.querySelectorAll('input[name=f]').forEach(r => r.onchange = () => { S.force = r.value; renderMedia(); });
+  box.querySelector('#simChk').onchange = e => { S.simOthers = e.target.checked; };
+  box.querySelector('#simNow').onclick = () => { const s = S.simOthers; S.simOthers = true; simulateOther(); S.simOthers = s; box.remove(); };
+  box.querySelector('#pocClose').onclick = () => box.remove();
+  box.onclick = e => { if (e.target === box) box.remove(); };
+};
+
+/* ===== 啟動 ===== */
+sizeMedia(); renderMedia(); renderOnline(); renderView(); loadYT();
+window.addEventListener('resize', () => { sizeMedia(); renderMedia(); });
+setTimeout(simulateOther, 2500); loopOthers();
+</script>
+</body>
+</html>
