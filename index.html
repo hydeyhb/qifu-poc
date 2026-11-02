@@ -3,188 +3,153 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="theme-color" content="#F6E6E3">
+<meta name="theme-color" content="#F7F3EC">
 <title>北港朝天宮・殿前祈福</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&display=swap">
-<link rel="stylesheet" href="https://unpkg.com/@phosphor-icons/web@2.1.1/src/regular/style.css">
-<link rel="stylesheet" href="https://unpkg.com/@phosphor-icons/web@2.1.1/src/fill/style.css">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&family=Noto+Serif+TC:wght@600;700&display=swap">
 <style>
 /*
-  設計：保留 Lifemap miniapp 的品牌（粉色頁首漸層、珊瑚主色、朱紅強調、淺色介面），
-  只重整層級、字級、間距與互動回饋。對象多為 40 歲以上信眾，內文 16px 起、主按鈕 56px 高。
-  圓角規則：按鈕全膠囊；卡片與面板 16px；小標籤全膠囊。
+  視覺規格「當代廟宇工藝・輕量版」（Claude × ChatGPT 收斂）：
+  - 宮廟感只來自三處：正殿直播、殿前剪紙香客、送祝福的紅籤條。其他元件回到簡潔可讀。
+  - 六色：硃紅 #7A2A24、暖金 #C99B54、紙白 #F7F3EC、淡紙褐 #E8DDCE、木褐 #3E2F26、灰褐 #8B8073。
+  - 標題與祝福句用思源宋體，功能文字用思源黑體。
+  - 不用常駐陰影、不用祥雲屋簷梅花、不用圖示庫。主按鈕圓角 10px，籤條 4px，心願卡 6px。
+  - 頁首維持紙白：Lifemap 標誌是紅字，放在深紅底上會看不見。
 */
 :root{
-  --coral:#E4745E; --coral-press:#CF5F49; --coral-soft:#FCEDE9; --coral-line:#F3C9BF;
-  --red:#C8341A;
-  --ink:#2E2422; --ink-2:#5E504B; --ink-3:#8A7B75;
-  --line:#EEE3DF; --bg:#FFFBFA; --surface:#FFFFFF;
-  --hdr-a:#F6E6E3; --hdr-b:#EFC8C4;
-  --wood-a:#5A3324; --wood-b:#2E1A13; --gold:#E9C67B; --gold-soft:#FFE7B0;
-  --ok:#2F7A4F; --ok-soft:#E8F3EC;
-  --font:"Noto Sans TC","PingFang TC","Microsoft JhengHei",system-ui,sans-serif;
+  --red:#7A2A24; --red-press:#652019; --gold:#C99B54;
+  --paper:#F7F3EC; --paper-deep:#E8DDCE; --wood:#3E2F26; --wood-2:#30231D; --muted:#8B8073;
+  --serif:"Noto Serif TC","Songti TC","PMingLiU",serif;
+  --sans:"Noto Sans TC","PingFang TC","Microsoft JhengHei",system-ui,sans-serif;
   --ease:cubic-bezier(.16,1,.3,1);
-  --r-card:16px;
 }
 *{box-sizing:border-box}
 [hidden]{display:none!important}
 html{-webkit-text-size-adjust:100%}
-body{margin:0;background:#EFE4E1;color:var(--ink);font:400 16px/1.6 var(--font)}
+body{margin:0;background:#E9E2D8;color:var(--wood);font:400 16px/1.65 var(--sans)}
 button{font:inherit;color:inherit}
-a{color:inherit}
-.app{max-width:440px;margin:0 auto;min-height:100dvh;background:var(--bg);position:relative;padding-bottom:calc(112px + env(safe-area-inset-bottom,0px));box-shadow:0 0 0 1px rgba(120,60,50,.06)}
+.app{max-width:440px;margin:0 auto;min-height:100dvh;background:var(--paper);position:relative;padding-bottom:calc(118px + env(safe-area-inset-bottom,0px))}
 .app.nosticky{padding-bottom:24px}
-i.ph,i.ph-fill{line-height:1}
 
-/* ---------- 頁首（不固定：固定頁首捲動時會蓋到直播播放器） ---------- */
-.hdr{height:56px;display:flex;align-items:center;padding:0 16px;background:linear-gradient(var(--hdr-a),var(--hdr-b))}
-.hdr img{height:30px;width:auto;display:block}
+/* 頁首（不固定：固定頁首捲動時會蓋到直播播放器） */
+.hdr{height:52px;display:flex;align-items:center;padding:0 16px;border-bottom:1px solid var(--paper-deep)}
+.hdr img{height:26px;width:auto;display:block}
 
-/* ---------- 場域列：狀態放在播放器外面 ---------- */
-.venue{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 16px 12px}
-.venue h1{margin:0;font-size:19px;font-weight:900;letter-spacing:.02em;line-height:1.3}
-.venue p{margin:2px 0 0;font-size:14px;color:var(--ink-3);display:flex;align-items:center;gap:5px}
-.venue p i{font-size:17px;color:var(--coral)}
-.venue p .demo{margin-left:2px}
-.live{display:inline-flex;align-items:center;gap:6px;height:30px;padding:0 12px;border-radius:999px;font-size:13.5px;font-weight:700;white-space:nowrap;background:#F3ECEA;color:var(--ink-3)}
-.live .pulse{width:8px;height:8px;border-radius:50%;background:currentColor}
-.live.on{background:#FDE7E2;color:var(--red)}
-.live.on .pulse{animation:pulse 1.6s var(--ease) infinite}
-@keyframes pulse{0%{box-shadow:0 0 0 0 rgba(200,52,26,.45)}100%{box-shadow:0 0 0 8px rgba(200,52,26,0)}}
+/* 廟名列 */
+.venue{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;padding:16px 16px 14px}
+.venue h1{margin:0;font:700 24px/1.3 var(--serif);letter-spacing:.04em;text-wrap:balance}
+.venue p{margin:4px 0 0;font-size:14px;color:var(--muted)}
+.live{display:inline-flex;align-items:center;gap:7px;margin-top:6px;font-size:14px;font-weight:500;color:var(--muted);white-space:nowrap}
+.live i{width:8px;height:8px;border-radius:50%;background:var(--muted);display:inline-block}
+.live.on{color:var(--red)}
+.live.on i{background:#C0392B;animation:breathe 2s ease-in-out infinite}
+@keyframes breathe{50%{opacity:.35}}
 
-/* ---------- 直播框：高度 = max(200px, 寬 × 9/16)，播放器上方不放任何元素 ---------- */
-.media{position:relative;width:100%;background:#1A0F0C}
+/* 正殿直播：高度 = max(200px, 寬 × 9/16)，播放器上方不放任何元素 */
+.media{position:relative;width:100%;background:#1E1612}
 .media .yt,.media .yt iframe{width:100%;height:100%;display:block;border:0}
-.fallback{position:absolute;inset:0;background:#2A1712 center/cover no-repeat;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;color:#FFF4E6;text-align:center;font-size:15px;font-weight:500}
-.fallback::before{content:"";position:absolute;inset:0;background:linear-gradient(rgba(25,12,9,.35),rgba(25,12,9,.65))}
+.fallback{position:absolute;inset:0;background:#2A1C16 center/cover no-repeat;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;color:var(--paper);text-align:center;font-size:15px}
+.fallback::before{content:"";position:absolute;inset:0;background:rgba(30,22,18,.62)}
 .fallback > *{position:relative}
-.fallback .tag{position:absolute;left:12px;top:12px;font-size:12.5px;font-weight:500;background:rgba(0,0,0,.5);border-radius:999px;padding:3px 10px}
-.fallback .play{width:60px;height:60px;border-radius:50%;border:0;background:rgba(255,255,255,.95);color:var(--red);font-size:26px;display:flex;align-items:center;justify-content:center;cursor:pointer;box-shadow:0 6px 18px rgba(0,0,0,.3);transition:transform .2s var(--ease)}
-.fallback .play:active{transform:scale(.94)}
-.fallback a{display:inline-flex;align-items:center;gap:6px;height:40px;padding:0 16px;border-radius:999px;background:rgba(255,255,255,.95);color:var(--red);font-weight:700;text-decoration:none;font-size:14.5px}
-.fallback .skel{width:56%;height:10px;border-radius:999px;background:linear-gradient(90deg,rgba(255,255,255,.15),rgba(255,255,255,.35),rgba(255,255,255,.15));background-size:200% 100%;animation:shimmer 1.4s linear infinite}
-@keyframes shimmer{to{background-position:-200% 0}}
+.fallback .tag{position:absolute;left:12px;top:12px;font-size:13px;color:var(--paper-deep)}
+.fallback a{display:inline-flex;align-items:center;height:44px;padding:0 18px;border-radius:10px;background:var(--paper);color:var(--red);font-weight:700;text-decoration:none}
+.fallback .bar{width:120px;height:2px;background:rgba(247,243,236,.25);overflow:hidden}
+.fallback .bar::after{content:"";display:block;width:40%;height:100%;background:var(--gold);animation:slide 1.2s ease-in-out infinite}
+@keyframes slide{from{transform:translateX(-100%)}to{transform:translateX(250%)}}
 
-/* ---------- 殿前舞台 ---------- */
-.stage{position:relative;height:128px;overflow:hidden;
-  background:
-    linear-gradient(180deg,rgba(0,0,0,.35),rgba(0,0,0,0) 22%),
-    repeating-linear-gradient(90deg,rgba(255,236,200,.05) 0 1px,transparent 1px 64px),
-    linear-gradient(180deg,var(--wood-a),var(--wood-b));
-  transition:height .45s var(--ease)}
-/* 供桌邊緣：把直播的正殿和下方的拜殿接起來 */
-.stage .altar{position:absolute;left:0;right:0;top:0;height:14px;background:linear-gradient(#8E2A1C,#6B1E14);box-shadow:0 2px 0 var(--gold),0 6px 14px rgba(0,0,0,.35)}
-.stage .altar::after{content:"";position:absolute;left:0;right:0;bottom:3px;height:1px;background:rgba(233,198,123,.45)}
-.stage .floor{position:absolute;left:-20%;right:-20%;bottom:-70px;height:150px;border-radius:50%;background:radial-gradient(ellipse at 50% 35%,rgba(255,214,150,.28),rgba(255,214,150,0) 65%)}
-.stage .cushion{position:absolute;bottom:12px;width:64px;height:16px;border-radius:50%;transform:translateX(-50%);background:radial-gradient(ellipse at 50% 40%,#C2493A,#8C2C22);box-shadow:inset 0 0 0 2px rgba(233,198,123,.55),0 3px 6px rgba(0,0,0,.35)}
-.stage .presence{position:absolute;left:12px;bottom:10px;z-index:5;display:inline-flex;align-items:center;gap:6px;height:28px;padding:0 10px;border-radius:999px;background:rgba(20,10,7,.55);color:#FFF1DA;font-size:13px;font-weight:500;backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px)}
-.stage .presence i{font-size:16px;color:var(--gold)}
-.stage .presence small{font-size:11px;color:rgba(255,241,218,.7)}
-.stage .overflow{position:absolute;right:12px;bottom:10px;z-index:5;font-size:13px;color:var(--gold-soft);height:28px;display:flex;align-items:center}
-.stage.slim{height:104px}
+/* 殿前舞台：唯一允許剪紙人物的地方 */
+.stage{position:relative;height:108px;overflow:hidden;background:linear-gradient(180deg,var(--wood-2) 0%,var(--wood) 45%,#6A4F3E 100%);border-top:1px solid var(--gold);transition:height .45s var(--ease)}
+.stage .line{position:absolute;left:16px;right:16px;bottom:18px;height:1px;background:rgba(201,155,84,.35)}
+.stage.slim{height:96px}
+.figure{position:absolute;bottom:10px;width:40px;height:60px;transform:translateX(-50%);transition:left 1.1s var(--ease),opacity .5s;z-index:2}
+.figure svg{width:100%;height:100%;overflow:visible;transform-origin:50% 95%;transition:transform .6s var(--ease)}
+.figure .head{transition:transform .6s var(--ease)}
+.figure.bow svg{transform:rotate(-6deg)}
+.figure.bow .head{transform:translateY(3px)}
+.figure.out{opacity:0}
+.figure .me{position:absolute;top:-20px;left:50%;transform:translateX(-50%);font-size:12px;font-weight:700;color:var(--gold);white-space:nowrap;letter-spacing:.1em}
+.plaque{position:absolute;top:10px;left:50%;transform:translate(-50%,-4px);z-index:3;max-width:calc(100% - 32px);width:max-content;background:var(--paper);color:var(--wood);border:1px solid var(--gold);border-radius:4px;padding:4px 14px;font:600 15px/1.5 var(--serif);text-align:center;opacity:0;transition:opacity .35s var(--ease),transform .35s var(--ease)}
+.plaque.on{opacity:1;transform:translate(-50%,0)}
+.plaque small{font:400 12px/1.4 var(--sans);color:var(--muted);margin-left:8px}
+.overflow{position:absolute;right:16px;bottom:24px;font-size:13px;color:var(--paper-deep);z-index:3}
 
-.av{position:absolute;bottom:14px;width:46px;height:64px;transform:translateX(-50%);transition:left 1.1s var(--ease),opacity .5s;z-index:3}
-.av svg{width:100%;height:100%;overflow:visible;transform-origin:50% 92%;transition:transform .6s var(--ease)}
-.av svg .head{transition:transform .6s var(--ease)}
-.av.bow svg{transform:rotate(-7deg)}
-.av.bow svg .head{transform:translateY(3px)}
-.av.mine::before{content:"";position:absolute;left:50%;bottom:-6px;width:58px;height:14px;transform:translateX(-50%);border-radius:50%;background:radial-gradient(ellipse,rgba(255,214,120,.75),rgba(255,214,120,0) 70%)}
-.av .me{position:absolute;top:-22px;left:50%;transform:translateX(-50%);font-size:12px;font-weight:700;color:#3A2208;background:var(--gold);border-radius:999px;padding:0 8px;line-height:18px;white-space:nowrap}
-.av.out{opacity:0}
-.bubble{position:absolute;bottom:84px;transform:translate(-50%,6px);max-width:58%;width:max-content;z-index:6;background:#FFFDF9;color:var(--ink);font-size:14px;font-weight:500;line-height:1.4;padding:7px 12px;border-radius:14px;box-shadow:0 6px 18px rgba(0,0,0,.28);text-align:center;opacity:0;transition:opacity .35s var(--ease),transform .35s var(--ease)}
-.bubble.on{opacity:1;transform:translate(-50%,0)}
-.bubble small{display:block;font-size:11.5px;font-weight:400;color:var(--ink-3)}
-.bubble::after{content:"";position:absolute;left:50%;bottom:-6px;margin-left:-6px;border:6px solid transparent;border-top-color:#FFFDF9;border-bottom:0}
-.spark{position:absolute;width:16px;height:16px;border-radius:50%;transform:translateX(-50%);z-index:4;pointer-events:none;background:radial-gradient(circle,#FFF8E1,#FFD47A 45%,rgba(255,180,80,0) 72%)}
+/* 內容 */
+.sec{padding:24px 16px 0;animation:enter .4s var(--ease)}
+@keyframes enter{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+.h2{margin:0 0 14px;font:600 21px/1.4 var(--serif);letter-spacing:.02em;text-wrap:balance}
+.lead{margin:-6px 0 16px;font-size:15px;color:var(--muted)}
 
-/* ---------- 內容 ---------- */
-.sheet{position:relative;background:var(--bg);padding:20px 16px 8px;display:flex;flex-direction:column;gap:20px;animation:rise .45s var(--ease)}
-@keyframes rise{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
-.h2{margin:0;font-size:21px;font-weight:900;line-height:1.35;letter-spacing:.01em;text-wrap:balance}
-.lead{margin:6px 0 0;font-size:15px;color:var(--ink-2);line-height:1.6}
-.label{font-size:14px;font-weight:700;color:var(--ink-2);margin:0 0 10px}
-.demo{display:inline-block;margin-left:6px;font-size:11.5px;font-weight:500;color:var(--coral-press);background:var(--coral-soft);border-radius:999px;padding:0 8px;vertical-align:2px}
-
-/* 首頁：剛留下的祝福（橫向滑動） */
-.ticker{display:flex;gap:10px;overflow-x:auto;scroll-snap-type:x mandatory;margin:0 -16px;padding:2px 16px 6px;scrollbar-width:none}
+.ticker{display:flex;gap:10px;overflow-x:auto;scroll-snap-type:x mandatory;margin:0 -16px;padding:0 16px 4px;scrollbar-width:none}
 .ticker::-webkit-scrollbar{display:none}
-.wish{flex:0 0 auto;scroll-snap-align:start;max-width:250px;background:var(--surface);border:1px solid var(--line);border-radius:var(--r-card);padding:12px 14px}
-.wish b{display:block;font-size:15.5px;font-weight:500;line-height:1.45}
-.wish span{display:block;margin-top:4px;font-size:12.5px;color:var(--ink-3)}
-.today{display:grid;grid-template-columns:1fr 1fr;border-top:1px solid var(--line);padding-top:16px}
-.today div + div{border-left:1px solid var(--line);padding-left:16px}
-.today strong{display:block;font-size:28px;font-weight:900;color:var(--red);font-variant-numeric:tabular-nums;line-height:1.1}
-.today span{font-size:13.5px;color:var(--ink-3)}
-.rowlink{display:flex;align-items:center;gap:12px;text-decoration:none;background:var(--surface);border:1px solid var(--line);border-radius:var(--r-card);padding:14px 16px;transition:transform .2s var(--ease),border-color .2s}
-.rowlink:active{transform:scale(.99)}
-.rowlink .ic{width:40px;height:40px;border-radius:12px;background:var(--coral-soft);color:var(--coral-press);display:flex;align-items:center;justify-content:center;font-size:22px;flex:0 0 40px}
-.rowlink b{display:block;font-size:16px}
-.rowlink span{font-size:13.5px;color:var(--ink-3)}
-.rowlink .go{margin-left:auto;color:var(--ink-3);font-size:20px}
+.wish{flex:0 0 82%;scroll-snap-align:start;background:rgba(232,221,206,.55);border-left:3px solid var(--red);border-radius:6px;padding:14px}
+.wish p{margin:0;font:600 17px/1.55 var(--serif)}
+.wish span{display:block;margin-top:6px;font-size:13px;color:var(--muted)}
+.today{display:grid;grid-template-columns:1fr 1fr;margin-top:24px;padding:4px 0}
+.today div + div{border-left:1px solid var(--paper-deep);padding-left:20px}
+.today strong{display:block;font-size:27px;font-weight:700;color:var(--red);font-variant-numeric:tabular-nums;line-height:1.2}
+.today span{font-size:14px}
+.more-link{display:flex;align-items:center;justify-content:space-between;min-height:52px;margin-top:20px;border-top:1px solid var(--paper-deep);border-bottom:1px solid var(--paper-deep);text-decoration:none;font-size:16px;font-weight:500}
+.more-link span:last-child{color:var(--muted);font-size:20px}
 
-/* 送祝福：主題切換＋祝福句 */
-.seg{display:grid;grid-template-columns:1fr 1fr;gap:6px;background:#F4ECE9;border-radius:999px;padding:5px}
-.seg button{height:44px;border:0;border-radius:999px;background:transparent;font-size:16px;font-weight:500;color:var(--ink-2);display:flex;align-items:center;justify-content:center;gap:8px;cursor:pointer;transition:background .25s var(--ease),color .25s}
-.seg button i{font-size:20px}
-.seg button[aria-pressed="true"]{background:var(--surface);color:var(--coral-press);font-weight:700;box-shadow:0 2px 6px rgba(120,60,50,.12)}
-.choices{display:flex;flex-direction:column;gap:10px}
-.choice{display:flex;align-items:center;gap:12px;width:100%;min-height:56px;text-align:left;border:1.5px solid var(--line);background:var(--surface);border-radius:var(--r-card);padding:12px 16px;font-size:17px;font-weight:500;cursor:pointer;transition:border-color .2s,background .2s,transform .15s var(--ease)}
-.choice:active{transform:scale(.99)}
-.choice .mark{margin-left:auto;font-size:24px;color:var(--line);transition:color .2s,transform .3s var(--ease)}
-.choice[aria-checked="true"]{border-color:var(--coral);background:var(--coral-soft)}
-.choice[aria-checked="true"] .mark{color:var(--coral);transform:scale(1.08)}
-.choice:disabled{cursor:default}
-.choice:disabled:not([aria-checked="true"]){opacity:.45}
-.hint{display:flex;gap:8px;font-size:13.5px;color:var(--ink-3);line-height:1.55}
-.hint i{font-size:17px;margin-top:2px;flex:0 0 auto}
+/* 送祝福：主題頁籤＋紅籤條 */
+.tabs{display:flex;gap:24px;border-bottom:1px solid var(--paper-deep);margin-bottom:16px}
+.tabs button{border:0;background:none;padding:8px 0 10px;font-size:17px;color:var(--muted);cursor:pointer;position:relative}
+.tabs button[aria-selected="true"]{color:var(--wood);font-weight:700}
+.tabs button[aria-selected="true"]::after{content:"";position:absolute;left:0;right:0;bottom:-1px;height:2px;background:var(--red)}
+.slips{display:flex;flex-direction:column;gap:10px}
+.slip{position:relative;display:flex;align-items:center;justify-content:space-between;gap:12px;width:100%;min-height:66px;text-align:left;border:1px solid transparent;background:var(--paper-deep);border-radius:4px;padding:12px 18px;font:600 19px/1.4 var(--serif);color:var(--wood);cursor:pointer;transition:background .2s,color .2s,transform .15s var(--ease)}
+.slip:active{transform:scale(.99)}
+.slip .tick{font:700 15px var(--sans);color:var(--gold);opacity:0;transition:opacity .2s}
+.slip[aria-checked="true"]{background:var(--red);color:var(--paper);border-color:var(--gold)}
+.slip[aria-checked="true"] .tick{opacity:1}
+.slip:disabled{cursor:default}
+.slip:disabled:not([aria-checked="true"]){opacity:.4}
+.note{margin:14px 0 0;font-size:14px;color:var(--muted)}
+/* 朱印：快速祝福被接受後才蓋，不代表正式卡審核或牆面已播放 */
+.stamp{position:absolute;right:56px;top:50%;width:56px;height:56px;margin-top:-28px;border:2px solid #E7B9AE;color:#F7E4DE;display:grid;place-items:center;font:700 15px/1.15 var(--serif);text-align:center;opacity:0;transform:scale(1.25) rotate(-5deg);pointer-events:none}
+.stamp.on{animation:stamp .26s ease-out forwards}
+@keyframes stamp{to{opacity:1;transform:scale(1) rotate(-3deg)}}
 
-/* 牆面狀態列 */
-.wall{display:flex;align-items:center;gap:10px;border-radius:var(--r-card);padding:12px 14px;font-size:15px;font-weight:500;background:#F4ECE9;color:var(--ink-2)}
-.wall i{font-size:22px;flex:0 0 auto}
-.wall.ok{background:var(--ok-soft);color:var(--ok)}
-.wall .dotwait{width:18px;height:18px;border-radius:50%;border:2.5px solid rgba(94,80,75,.25);border-top-color:var(--ink-2);animation:spin .9s linear infinite;flex:0 0 18px}
-@keyframes spin{to{transform:rotate(360deg)}}
+/* 狀態列 */
+.status{display:flex;align-items:center;gap:10px;font-size:15px;color:var(--muted);padding:12px 0;border-bottom:1px solid var(--paper-deep);margin-bottom:20px}
+.status i{width:8px;height:8px;border-radius:50%;background:var(--gold);flex:0 0 8px}
+.status.ok{color:#3F6B4E}
+.status.ok i{background:#3F6B4E}
 
 /* 祈福卡預覽（示意，正式卡以各廟母版為準） */
-.preview{position:relative;display:grid;grid-template-columns:30% 1fr;min-height:132px;border-radius:var(--r-card);overflow:hidden;background:#F6EBDD;box-shadow:0 10px 26px rgba(120,60,40,.14);border:1px solid #EAD7BF}
-.preview .side{background:linear-gradient(160deg,#B4483B,#8E3227);color:#FBE9D2;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;font-weight:900;font-size:24px;letter-spacing:.2em;writing-mode:vertical-rl}
-.preview .body{padding:14px 16px;color:#5A4238;font-size:14.5px;line-height:1.65}
-.preview .body .t{font-size:13px;color:#8A6E60}
-.preview .body .w{font-size:17px;font-weight:700;color:#4A3028;margin-top:2px}
-.preview .body .n{color:#B0907E}
-.preview .badge{position:absolute;right:10px;bottom:10px;font-size:11.5px;color:var(--ink-3);background:rgba(255,255,255,.85);border-radius:999px;padding:1px 9px}
-.howto{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:0;padding:0;list-style:none}
-.howto li{display:flex;flex-direction:column;align-items:center;gap:6px;text-align:center;font-size:13.5px;color:var(--ink-2);line-height:1.4}
-.howto i{width:44px;height:44px;border-radius:50%;background:var(--coral-soft);color:var(--coral-press);display:flex;align-items:center;justify-content:center;font-size:22px}
+.preview{position:relative;display:grid;grid-template-columns:30% 1fr;min-height:136px;border-radius:6px;overflow:hidden;background:var(--paper-deep)}
+.preview .side{background:var(--red);color:var(--paper);display:flex;align-items:center;justify-content:center;font:700 22px var(--serif);letter-spacing:.25em;writing-mode:vertical-rl}
+.preview .body{padding:16px;font-size:14px;color:var(--muted);line-height:1.7}
+.preview .body b{display:block;margin:2px 0 4px;font:600 18px/1.5 var(--serif);color:var(--wood)}
+.preview .flag{position:absolute;right:12px;bottom:10px;font-size:12px;color:var(--muted)}
+.steps{list-style:none;margin:20px 0 0;padding:0;counter-reset:s}
+.steps li{counter-increment:s;display:flex;gap:14px;align-items:baseline;padding:10px 0;font-size:16px;border-bottom:1px solid var(--paper-deep)}
+.steps li::before{content:counter(s);font:700 18px var(--serif);color:var(--red);width:14px;flex:0 0 14px}
 
-/* ---------- 底部按鈕列（播放器在頁首；底部留白等高，不會蓋到播放器） ---------- */
-.dock{position:fixed;left:50%;bottom:0;transform:translateX(-50%);width:100%;max-width:440px;z-index:20;padding:12px 16px calc(14px + env(safe-area-inset-bottom,0px));background:rgba(255,251,250,.92);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-top:1px solid var(--line);display:flex;flex-direction:column;gap:6px}
-.app.nosticky .dock{position:static;transform:none;border-top:0;background:none}
-.btn{display:flex;align-items:center;justify-content:center;gap:10px;width:100%;min-height:56px;border:0;border-radius:999px;padding:8px 20px;font-size:18px;font-weight:700;cursor:pointer;text-decoration:none;transition:transform .15s var(--ease),background .2s}
-.btn i{font-size:24px}
-.btn .txt{display:flex;flex-direction:column;align-items:flex-start;line-height:1.3}
-.btn .txt small{font-size:12.5px;font-weight:400;opacity:.9}
-.btn.primary{background:var(--coral);color:#fff;box-shadow:0 8px 20px rgba(228,116,94,.32)}
-.btn.primary:active{transform:translateY(1px) scale(.99);background:var(--coral-press)}
-.btn.primary:disabled{background:#E7DCD8;color:#8A7B75;box-shadow:none;cursor:not-allowed}
-.btn.primary.done{background:var(--ok);box-shadow:none}
-.textbtn{border:0;background:none;color:var(--ink-3);font-size:15px;padding:8px;cursor:pointer;text-align:center}
-.btn:focus-visible,.textbtn:focus-visible,.choice:focus-visible,.seg button:focus-visible,.rowlink:focus-visible,.play:focus-visible{outline:3px solid #F2B8AC;outline-offset:2px}
+/* 底部主按鈕列（播放器在頁首；底部留白等高，不會蓋到播放器） */
+.dock{position:fixed;left:50%;bottom:0;transform:translateX(-50%);width:100%;max-width:440px;z-index:20;padding:12px 16px calc(12px + env(safe-area-inset-bottom,0px));background:var(--paper);border-top:1px solid var(--paper-deep);text-align:center}
+.app.nosticky .dock{position:static;transform:none;border-top:0}
+.cta{display:flex;align-items:center;justify-content:center;width:100%;height:58px;border:0;border-radius:10px;background:var(--red);color:#fff;font-size:18px;font-weight:700;letter-spacing:.06em;cursor:pointer;text-decoration:none;transition:background .15s,transform .15s var(--ease)}
+.cta:active{background:var(--red-press);transform:scale(.99)}
+.cta:disabled{background:var(--paper-deep);color:var(--muted);cursor:not-allowed}
+.cta.done{background:#3F6B4E}
+.sub{display:block;margin-top:6px;font-size:13px;color:var(--muted)}
+.back{display:block;margin:18px auto 0;border:0;background:none;color:var(--muted);font-size:15px;padding:10px;cursor:pointer}
+.cta:focus-visible,.back:focus-visible,.slip:focus-visible,.tabs button:focus-visible,.more-link:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
 
-/* ---------- 頁尾與 POC 控制（內部討論用） ---------- */
-.foot{padding:28px 16px 8px;text-align:center;font-size:12.5px;color:var(--ink-3)}
-.foot button{border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:6px 14px;font-size:13px;color:var(--ink-2);cursor:pointer;display:inline-flex;align-items:center;gap:6px}
-.toast{position:fixed;left:50%;bottom:calc(128px + env(safe-area-inset-bottom,0px));transform:translate(-50%,8px);z-index:40;max-width:88%;background:rgba(46,36,34,.94);color:#fff;font-size:14.5px;padding:10px 16px;border-radius:999px;display:flex;align-items:center;gap:8px;opacity:0;pointer-events:none;transition:opacity .3s var(--ease),transform .3s var(--ease)}
+/* 頁尾與 POC 控制（內部討論用） */
+.foot{padding:36px 16px 8px;text-align:center;font-size:12.5px;color:var(--muted)}
+.foot button{border:1px solid var(--paper-deep);background:none;border-radius:8px;padding:6px 14px;font-size:13px;color:var(--muted);cursor:pointer}
+.toast{position:fixed;left:50%;bottom:calc(132px + env(safe-area-inset-bottom,0px));transform:translate(-50%,8px);z-index:40;max-width:88%;background:var(--wood);color:var(--paper);font-size:14.5px;padding:10px 16px;border-radius:8px;opacity:0;pointer-events:none;transition:opacity .3s var(--ease),transform .3s var(--ease)}
 .toast.on{opacity:1;transform:translate(-50%,0)}
-.poc{position:fixed;inset:0;z-index:50;background:rgba(30,18,14,.4);display:flex;align-items:flex-end;justify-content:center}
-.poc .box{background:var(--surface);border-radius:20px 20px 0 0;width:100%;max-width:440px;padding:20px 16px calc(20px + env(safe-area-inset-bottom,0px));font-size:15px;max-height:85dvh;overflow:auto;animation:rise .35s var(--ease)}
-.poc h3{margin:4px 0 8px;font-size:16px}
+.poc{position:fixed;inset:0;z-index:50;background:rgba(30,22,18,.45);display:flex;align-items:flex-end;justify-content:center}
+.poc .box{background:var(--paper);border-radius:12px 12px 0 0;width:100%;max-width:440px;padding:20px 16px calc(20px + env(safe-area-inset-bottom,0px));font-size:15px;max-height:85dvh;overflow:auto}
+.poc h3{margin:4px 0 8px;font:600 17px var(--serif)}
 .poc label{display:flex;gap:10px;align-items:center;min-height:40px}
-.poc input{width:18px;height:18px;accent-color:var(--coral)}
-.poc p{color:var(--ink-3);font-size:13px;line-height:1.6}
-@media (prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
+.poc input{width:18px;height:18px;accent-color:var(--red)}
+.poc p{color:var(--muted);font-size:13px}
+@media (prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}.stamp.on{opacity:1;transform:rotate(-3deg)}}
 </style>
 </head>
 <body>
@@ -198,7 +163,7 @@ i.ph,i.ph-fill{line-height:1}
       <h1>北港朝天宮・正殿</h1>
       <p id="presence"></p>
     </div>
-    <span class="live" id="liveChip"><span class="pulse"></span><span id="liveText">連線中</span></span>
+    <span class="live" id="liveChip"><i></i><span id="liveText">連線中</span></span>
   </section>
 
   <div class="media" id="media">
@@ -207,16 +172,14 @@ i.ph,i.ph-fill{line-height:1}
   </div>
 
   <div class="stage" id="stage" aria-label="殿前">
-    <div class="altar"></div>
-    <div class="floor"></div>
-    <span class="cushion" style="left:24%"></span><span class="cushion" style="left:50%"></span><span class="cushion" style="left:76%"></span>
+    <div class="line"></div>
     <span class="overflow" id="overflow"></span>
   </div>
 
   <main id="view"></main>
 
   <footer class="foot">
-    <button type="button" id="pocBtn"><i class="ph ph-sliders-horizontal"></i>POC 控制</button>
+    <button type="button" id="pocBtn">POC 控制</button>
     <p>POC 版本：人數、統計、其他香客與牆面回報為模擬資料。</p>
   </footer>
 
@@ -232,17 +195,16 @@ const CFG = {
   photo: 'https://i.ytimg.com/vi/B12MobI0EGg/hqdefault.jpg', // 正式版換成廟方核准的正殿照片
   groupUrl: 'https://lifemap.miniapp.tw/home/group/0P2-KwZoI4KhX5lp6miq/',
   topics: [
-    { id:'study', name:'學業', icon:'ph-graduation-cap', product:'金榜題名祈福卡', side:'金榜題名',
+    { id:'study', name:'學業', product:'金榜題名祈福卡', side:'金榜題名',
       apply:'https://lifemap.miniapp.tw/home/group/0P2-KwZoI4KhX5lp6miq/apply/item/0OjUzsvZSiV2nNhPtu8p/?neworder=true',
       phrases:['願考試順利，金榜題名','願讀書專注，心定不慌','願努力都有好結果'] },
-    { id:'career', name:'事業', icon:'ph-briefcase', product:'業績長紅祈福卡', side:'業績長紅',
+    { id:'career', name:'事業', product:'業績長紅祈福卡', side:'業績長紅',
       apply:'https://lifemap.miniapp.tw/home/group/0P2-KwZoI4KhX5lp6miq/apply/item/0P1f6x1i2RH_NpRKm0FD/?neworder=true',
       phrases:['願工作順心，貴人相助','願生意興隆，訂單滿滿','願升遷順利，一路長紅'] }
   ]
 };
 // 正式版的其他香客事件來自後端 venue_event；POC 在本機模擬
 const OTHERS = ['願考試順利，金榜題名','願工作順心，貴人相助','願讀書專注，心定不慌','願生意興隆，訂單滿滿','願努力都有好結果'];
-const ROBES = ['#5C6F8E','#4E7A5C','#A98E5C','#7D5C8E','#8E6A4E'];
 const RECENT = [
   { w:'願女兒考試順利，考上第一志願', t:'12 分鐘前上牆' },
   { w:'願今年業績長紅，客戶都順利成交', t:'40 分鐘前上牆' },
@@ -258,8 +220,8 @@ const S = {
 const $ = s => document.querySelector(s);
 const esc = s => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 
-/* ===== 直播框 ===== */
-let yt = null, ytReady = false, stallT = null, blockT = null;
+/* ===== 正殿直播 ===== */
+let yt = null, ytReady = false, stallT = null;
 function canEmbed(){ return $('#media').clientWidth >= 300 && window.innerHeight >= 560; }
 function sizeMedia(){
   const w = $('#media').clientWidth;
@@ -278,26 +240,23 @@ function uiState(){
 }
 function renderMedia(){
   const st = uiState(), fb = $('#fallback');
-  // 播放器準備好後就要可見；隱藏的播放器會被 YouTube 判定不可見而暫停
-  // 自動播放被擋時直接露出 YouTube 自己的播放鍵（不在播放器上疊任何東西）
+  // 播放器準備好就保持可見（隱藏會被 YouTube 暫停）；自動播放被擋時直接露出 YouTube 自己的播放鍵
   const showYt = st === 'live' || (ytReady && (st === 'connecting' || st === 'blocked'));
   $('#yt').style.visibility = showYt ? 'visible' : 'hidden';
   fb.hidden = showYt;
   fb.style.backgroundImage = `url("${CFG.photo}")`;
   const M = {
-    connecting:['連線中',false,'<div class="skel"></div><div>直播連線中</div>'],
+    connecting:['連線中',false,'<div>直播連線中</div><div class="bar"></div>'],
     live:['直播中',true,''],
-    blocked:['直播中',true,'<button class="play" type="button" id="playBtn" aria-label="播放直播"><i class="ph-fill ph-play"></i></button><div>點一下看直播</div>'],
+    blocked:['點播放看直播',true,''],
     error:['暫停',false,'<div>直播暫時無法播放</div>'],
     offline:['照片',false,'<span class="tag">廟內照片</span><div>直播暫停，先看看廟內</div>'],
     none:['照片',false,'<span class="tag">廟內照片</span>'],
-    small:['直播中',true,`<div>畫面較小，到 YouTube 觀看</div><a href="${CFG.youtubeUrl}" target="_blank" rel="noopener"><i class="ph ph-broadcast"></i>觀看直播</a>`]
+    small:['直播中',true,`<div>畫面較小，請到 YouTube 觀看</div><a href="${CFG.youtubeUrl}" target="_blank" rel="noopener">觀看直播</a>`]
   }[st];
-  if (st === 'blocked' && showYt) M[0] = '點播放看直播';
   $('#liveText').textContent = M[0];
   $('#liveChip').classList.toggle('on', M[1]);
   fb.innerHTML = M[2];
-  const pb = $('#playBtn'); if (pb) pb.onclick = () => { try { yt.playVideo(); } catch(e){} };
 }
 window.onYouTubeIframeAPIReady = function(){
   if (!canEmbed()) { renderMedia(); return; }
@@ -308,7 +267,7 @@ window.onYouTubeIframeAPIReady = function(){
       onReady: e => {
         ytReady = true; renderMedia(); // 先讓播放器可見，再要求播放
         e.target.mute(); e.target.playVideo();
-        blockT = setTimeout(() => { if (S.player !== 'playing') { S.player = 'blocked'; renderMedia(); } }, 5000);
+        setTimeout(() => { if (S.player !== 'playing') { S.player = 'blocked'; renderMedia(); } }, 5000);
       },
       onStateChange: e => {
         const P = YT.PlayerState; clearTimeout(stallT);
@@ -328,31 +287,29 @@ function loadYT(){
   document.head.appendChild(s);
 }
 
-/* ===== 殿前舞台與香客 ===== */
+/* ===== 殿前剪紙香客 ===== */
 const actors = [];
-function figure(robe){
-  // Q 版背影香客：髮髻、衣領、寬袖；合掌時頭微低
-  return `<svg viewBox="0 0 46 64" aria-hidden="true">
-    <ellipse cx="23" cy="61" rx="15" ry="3" fill="rgba(0,0,0,.35)"/>
-    <path d="M7 60 Q5 38 23 32 Q41 38 39 60 Z" fill="${robe}"/>
-    <path d="M7 60 Q5 38 23 32 Q41 38 39 60" fill="none" stroke="rgba(255,240,220,.55)" stroke-width="1.2"/>
-    <path d="M17 34 L23 44 L29 34" fill="none" stroke="rgba(255,240,220,.7)" stroke-width="1.6" stroke-linejoin="round"/>
-    <rect x="9" y="47" width="28" height="3" rx="1.5" fill="rgba(0,0,0,.18)"/>
+function figure(fill){
+  // 平面剪紙：頭、髮髻、肩背、合掌輪廓、坐墊。不畫五官與衣紋
+  return `<svg viewBox="0 0 40 60" aria-hidden="true">
+    <ellipse cx="20" cy="56" rx="17" ry="3.6" fill="#5A2018" stroke="#C99B54" stroke-width="1"/>
+    <path d="M3 55 C3 44 7 36.5 13.5 34.5 L26.5 34.5 C33 36.5 37 44 37 55 Z" fill="${fill}" stroke="#C99B54" stroke-width="1.4" stroke-linejoin="round"/>
+    <path d="M15 34.5 L20 40 L25 34.5" fill="none" stroke="#C99B54" stroke-width="1.2" stroke-linejoin="round"/>
+    <path d="M20 40 L20 55" stroke="rgba(201,155,84,.45)" stroke-width="1"/>
+    <rect x="17" y="29.5" width="6" height="5.5" fill="#161010"/>
     <g class="head">
-      <circle cx="23" cy="20" r="12" fill="#2A1F1B"/>
-      <circle cx="23" cy="7.5" r="5" fill="#2A1F1B"/>
-      <rect x="16.5" y="6.5" width="13" height="2" rx="1" fill="${'#E9C67B'}"/>
-      <path d="M13 16 Q17 10 24 9.5" fill="none" stroke="rgba(255,255,255,.28)" stroke-width="1.6" stroke-linecap="round"/>
+      <circle cx="20" cy="21" r="8.8" fill="#161010" stroke="#C99B54" stroke-width="1.2"/>
+      <circle cx="20" cy="10.6" r="3.6" fill="#161010" stroke="#C99B54" stroke-width="1.2"/>
     </g>
   </svg>`;
 }
-const slotX = i => [50, 24, 76][i] ?? 50;
-function addActor({ mine=false, robe }){
+const slotX = i => [50, 26, 74][i] ?? 50;
+function addActor({ mine=false }){
   const live = actors.filter(a => !a.leaving);
   if (live.length >= 3 && !mine) { bumpOverflow(); return null; }
   const el = document.createElement('div');
-  el.className = 'av' + (mine ? ' mine' : '');
-  el.innerHTML = figure(mine ? '#D9614B' : robe) + (mine ? '<span class="me">你</span>' : '');
+  el.className = 'figure';
+  el.innerHTML = figure(mine ? '#9A3A2E' : '#7A2A24') + (mine ? '<span class="me">你</span>' : '');
   el.style.left = Math.random() < .5 ? '-12%' : '112%';
   $('#stage').appendChild(el);
   const used = live.map(x => x.slot);
@@ -365,23 +322,17 @@ function addActor({ mine=false, robe }){
   requestAnimationFrame(() => requestAnimationFrame(() => { el.style.left = slotX(a.slot) + '%'; }));
   return a;
 }
-function speak(a, text, sub){
-  document.querySelectorAll('.bubble').forEach(b => b.remove()); // 泡泡一次只顯示一則
-  const b = document.createElement('div');
-  b.className = 'bubble';
-  b.innerHTML = esc(text) + (sub ? `<small>${esc(sub)}</small>` : '');
-  b.style.left = Math.min(70, Math.max(30, slotX(a.slot))) + '%';
-  $('#stage').appendChild(b);
-  requestAnimationFrame(() => b.classList.add('on'));
-  setTimeout(() => { b.classList.remove('on'); setTimeout(() => b.remove(), 400); }, 5200);
+function plaque(text, sub){
+  // 祝福文字牌：一次只顯示一則，有事件才出現
+  document.querySelectorAll('.plaque').forEach(p => p.remove());
+  const p = document.createElement('div');
+  p.className = 'plaque';
+  p.innerHTML = esc(text) + (sub ? `<small>${esc(sub)}</small>` : '');
+  $('#stage').appendChild(p);
+  requestAnimationFrame(() => p.classList.add('on'));
+  setTimeout(() => { p.classList.remove('on'); setTimeout(() => p.remove(), 400); }, 5200);
 }
-function bow(a){
-  a.el.classList.add('bow');
-  const s = document.createElement('div');
-  s.className = 'spark'; s.style.left = slotX(a.slot) + '%'; s.style.bottom = '70px';
-  $('#stage').appendChild(s);
-  s.animate([{ transform:'translate(-50%,0) scale(.6)', opacity:1 }, { transform:'translate(-50%,-44px) scale(1.1)', opacity:0 }], { duration:1700, easing:'cubic-bezier(.16,1,.3,1)' }).onfinish = () => s.remove();
-}
+function bow(a){ a.el.classList.add('bow'); }
 function leave(a, ms){
   setTimeout(() => {
     a.leaving = true; a.el.classList.remove('bow');
@@ -395,18 +346,16 @@ function bumpOverflow(){
   clearTimeout(ovT); ovT = setTimeout(() => { ovN = 0; $('#overflow').textContent = ''; }, 20000);
 }
 function renderPresence(){
-  $('#presence').innerHTML = S.online >= 3
-    ? `<i class="ph-fill ph-users-three"></i>此刻 ${S.online} 人在線參與<em class="demo" style="font-style:normal">示意</em>`
-    : `<i class="ph-fill ph-users-three"></i>此刻，還有人正在留下祝福`;
+  $('#presence').textContent = S.online >= 3 ? `此刻 ${S.online} 人在線參與` : '此刻，還有人正在留下祝福';
 }
 function simulateOther(){
   if (!S.simOthers) return;
-  const a = addActor({ robe: ROBES[Math.floor(Math.random()*ROBES.length)] });
+  const a = addActor({});
   if (!a) return;
   if (Math.random() < .75) {
     setTimeout(() => {
-      bow(a); speak(a, OTHERS[Math.floor(Math.random()*OTHERS.length)], '一位香客・剛剛');
-      S.today.blessings++; if (S.step === 'home') { const n = $('#nBless'); if (n) n.textContent = S.today.blessings; }
+      bow(a); plaque(OTHERS[Math.floor(Math.random()*OTHERS.length)], '一位香客');
+      S.today.blessings++; const n = $('#nBless'); if (n) n.textContent = S.today.blessings;
       leave(a, 6500);
     }, 2500 + Math.random()*4000);
   } else leave(a, 15000); // 15 秒內沒送出就離開，不做祈福動作
@@ -425,87 +374,73 @@ function render(){
 
   if (S.step === 'home') {
     v.innerHTML = `
-      <div class="sheet">
-        <section>
-          <p class="label">大家剛留下的心願</p>
-          <div class="ticker">
-            ${RECENT.map(r => `<article class="wish"><b>「${esc(r.w)}」</b><span>${esc(r.t)}・已通過審核</span></article>`).join('')}
-          </div>
-        </section>
-        <section class="today" aria-label="今天這間廟">
+      <section class="sec">
+        <h2 class="h2">大家剛留下的心願</h2>
+        <div class="ticker">
+          ${RECENT.map(r => `<article class="wish"><p>${esc(r.w)}</p><span>${esc(r.t)}・已通過審核</span></article>`).join('')}
+        </div>
+        <div class="today" aria-label="今天這間廟">
           <div><strong>${S.today.wishes}</strong><span>今天的祈福卡</span></div>
-          <div><strong id="nBless">${S.today.blessings}</strong><span>今天的祝福<em class="demo" style="font-style:normal">示意</em></span></div>
-        </section>
-        <a class="rowlink" href="${CFG.groupUrl}" target="_blank" rel="noopener">
-          <span class="ic"><i class="ph ph-pencil-simple-line"></i></span>
-          <span><b>直接寫祈福卡</b><span>金榜題名、業績長紅兩款</span></span>
-          <i class="ph ph-caret-right go"></i>
-        </a>
-      </div>`;
-    d.innerHTML = `<button class="btn primary" id="go" type="button"><i class="ph-fill ph-hands-praying"></i><span class="txt">免費送一句祝福<small>你的小人會走到殿前合掌</small></span></button>`;
+          <div><strong id="nBless">${S.today.blessings}</strong><span>今天的祝福</span></div>
+        </div>
+        <a class="more-link" href="${CFG.groupUrl}" target="_blank" rel="noopener"><span>直接寫祈福卡</span><span aria-hidden="true">›</span></a>
+      </section>`;
+    d.innerHTML = `<button class="cta" id="go" type="button">免費送一句祝福</button><span class="sub">不用打字・你的小人會走到殿前合掌</span>`;
     $('#go').onclick = startBless;
   }
 
   if (S.step === 'bless') {
     const t = S.topic;
     v.innerHTML = `
-      <div class="sheet">
-        <div>
-          <h2 class="h2">送一句祝福到殿前</h2>
-          <p class="lead">免登入、免付費。選一句，你的小人會在殿前合掌，祝福也會出現在祈福牆上。</p>
+      <section class="sec">
+        <h2 class="h2">選一句想送出的祝福</h2>
+        <p class="lead">免登入、免付費。祝福句由廟方事先核准。</p>
+        <div class="tabs" role="tablist" aria-label="祝福主題">
+          ${CFG.topics.map(x => `<button type="button" role="tab" data-t="${x.id}" aria-selected="${x.id===t.id}" ${S.sent?'disabled':''}>${x.name}</button>`).join('')}
         </div>
-        <div class="seg" role="group" aria-label="祝福主題">
-          ${CFG.topics.map(x => `<button type="button" data-t="${x.id}" aria-pressed="${x.id===t.id}" ${S.sent?'disabled':''}><i class="ph ${x.icon}"></i>${x.name}</button>`).join('')}
+        <div class="slips" role="radiogroup" aria-label="祝福句">
+          ${t.phrases.map(p => `<button type="button" class="slip" role="radio" aria-checked="${p===S.phrase}" data-p="${esc(p)}" ${S.sent?'disabled':''}>${esc(p)}<span class="tick">已選</span>${p===S.phrase&&S.sent?'<span class="stamp" id="stamp">祝福<br>已送</span>':''}</button>`).join('')}
         </div>
-        <div class="choices" role="radiogroup" aria-label="祝福句">
-          ${t.phrases.map(p => `<button type="button" class="choice" role="radio" aria-checked="${p===S.phrase}" data-p="${esc(p)}" ${S.sent?'disabled':''}>${esc(p)}<i class="ph-fill ph-check-circle mark"></i></button>`).join('')}
-        </div>
-        ${S.sent ? wallBox() : `<p class="hint"><i class="ph ph-seal-check"></i>祝福句由廟方事先核准。</p>`}
-        <button class="textbtn" type="button" id="back">先不用，回到殿前</button>
-      </div>`;
+        <button class="back" type="button" id="back">先不用，回到殿前</button>
+      </section>`;
     d.innerHTML = S.sent
-      ? `<button class="btn primary done" type="button" disabled style="background:var(--ok);color:#fff"><i class="ph-fill ph-check-circle"></i>已送到殿前</button>`
-      : `<button class="btn primary" id="send" type="button" ${S.phrase?'':'disabled'}><i class="ph-fill ph-hands-praying"></i>${S.phrase?'送出這句祝福':'先選一句祝福'}</button>`;
-    v.querySelectorAll('.seg button').forEach(b => b.onclick = () => { S.topic = CFG.topics.find(x => x.id === b.dataset.t); S.phrase = null; render(); });
-    v.querySelectorAll('.choice').forEach(b => b.onclick = () => { S.phrase = b.dataset.p; render(); });
+      ? `<button class="cta done" type="button" disabled style="background:#3F6B4E;color:#fff">祝福已送到殿前</button><span class="sub">接著可以把它寫成祈福卡</span>`
+      : `<button class="cta" id="send" type="button" ${S.phrase?'':'disabled'}>${S.phrase?'送出這句祝福':'先選一句祝福'}</button><span class="sub">送出後，你的小人會在殿前合掌</span>`;
+    v.querySelectorAll('.tabs button').forEach(b => b.onclick = () => { S.topic = CFG.topics.find(x => x.id === b.dataset.t); S.phrase = null; render(); });
+    v.querySelectorAll('.slip').forEach(b => b.onclick = () => { S.phrase = b.dataset.p; render(); });
     $('#back').onclick = () => { if (me && !S.sent) { leave(me, 0); me = null; } S.step = 'home'; render(); };
     const s = $('#send'); if (s) s.onclick = send;
+    const st = $('#stamp'); if (st) requestAnimationFrame(() => st.classList.add('on'));
   }
 
   if (S.step === 'card') {
     const t = S.topic;
     v.innerHTML = `
-      <div class="sheet">
-        ${wallBox()}
-        <div>
-          <h2 class="h2">把這句祝福，寫成一張祈福卡</h2>
-          <p class="lead">快速祝福只會短暫出現。寫成${esc(t.product)}，審核後會加入祈福牆的卡片輪播。</p>
-        </div>
+      <section class="sec">
+        ${statusLine()}
+        <h2 class="h2">把這句祝福，寫成一張祈福卡</h2>
+        <p class="lead">快速祝福只會短暫出現。寫成${esc(t.product)}，審核後會加入祈福牆的卡片輪播。</p>
         <div class="preview" aria-label="祈福卡預覽">
           <div class="side">${esc(t.side)}</div>
-          <div class="body">
-            <div class="t">北港朝天宮・文昌殿</div>
-            <div class="w">${esc(S.phrase)}</div>
-            <div class="n">祈福人：你的名字</div>
-          </div>
-          <span class="badge">預覽・尚未送出</span>
+          <div class="body">北港朝天宮・文昌殿<b>${esc(S.phrase)}</b>祈福人：你的名字</div>
+          <span class="flag">預覽・尚未送出</span>
         </div>
-        <ol class="howto" aria-label="接下來">
-          <li><i class="ph ph-pencil-simple-line"></i>填姓名與 Email<br>貼上這句祝福</li>
-          <li><i class="ph ph-hand-coins"></i>選擇祈福心意金</li>
-          <li><i class="ph ph-image"></i>付款完成<br>排入祈福牆</li>
+        <ol class="steps">
+          <li>填姓名與 Email，貼上這句祝福</li>
+          <li>選擇祈福心意金</li>
+          <li>付款完成，祈福卡排入祈福牆</li>
         </ol>
-        <button class="textbtn" type="button" id="back2">先不用，回到殿前</button>
-      </div>`;
-    d.innerHTML = `<button class="btn primary" id="apply" type="button"><i class="ph ph-copy"></i><span class="txt">寫成${esc(t.product)}<small>會先幫你複製這句祝福</small></span></button>`;
+        <button class="back" type="button" id="back2">先不用，回到殿前</button>
+      </section>`;
+    d.innerHTML = `<button class="cta" id="apply" type="button">寫成${esc(t.product)}</button><span class="sub">會先幫你複製這句祝福，到下一頁貼上</span>`;
     $('#apply').onclick = apply;
     $('#back2').onclick = () => { S.step = 'home'; S.sent = false; S.phrase = null; S.wall = null; render(); window.scrollTo({ top:0, behavior:'smooth' }); };
   }
 }
-function wallBox(){
-  if (S.wall === 'played') return `<div class="wall ok" id="wallBox"><i class="ph-fill ph-check-circle"></i>你的祝福正在祈福牆上（示意）</div>`;
-  if (S.wall === 'unconfirmed') return `<div class="wall" id="wallBox"><i class="ph ph-info"></i>祝福已送出，目前無法確認牆面展示</div>`;
-  return `<div class="wall" id="wallBox"><span class="dotwait"></span>祝福已送出，祈福牆準備播放中</div>`;
+function statusLine(){
+  if (S.wall === 'played') return `<div class="status ok" id="statusLine"><i></i>你的祝福正在祈福牆上（示意）</div>`;
+  if (S.wall === 'unconfirmed') return `<div class="status" id="statusLine"><i></i>祝福已送出，目前無法確認牆面展示</div>`;
+  return `<div class="status" id="statusLine"><i></i>祝福已送出，祈福牆準備播放</div>`;
 }
 
 /* ===== 流程 ===== */
@@ -517,28 +452,24 @@ function startBless(){
 }
 function send(){
   if (!S.phrase || S.sent) return;
+  // 正式版：後端 accepted 後才蓋印；失敗則停在原畫面可重試
   S.sent = true; S.wall = 'waiting'; S.today.blessings++;
   if (!me || me.leaving) me = addActor({ mine:true });
-  setTimeout(() => { bow(me); speak(me, S.phrase, '你的祝福'); }, 250);
+  setTimeout(() => { bow(me); plaque(S.phrase, '你的祝福'); }, 250);
   render();
-  // 正式版依牆端回報 wall_played 更新；POC 以 3 秒模擬
-  setTimeout(() => { S.wall = 'played'; const w = $('#wallBox'); if (w) w.outerHTML = wallBox(); }, 3000);
-  setTimeout(() => { S.step = 'card'; render(); window.scrollTo({ top:0, behavior:'smooth' }); }, 2000);
+  setTimeout(() => { S.wall = 'played'; const l = $('#statusLine'); if (l) l.outerHTML = statusLine(); }, 3000); // 正式版依牆端回報 wall_played
+  setTimeout(() => { S.step = 'card'; render(); window.scrollTo({ top:0, behavior:'smooth' }); }, 1600);
   setTimeout(() => { if (me) { leave(me, 0); me = null; } }, 9000);
 }
 async function apply(){
   const text = S.phrase || '';
   let ok = false;
   try { await navigator.clipboard.writeText(text); ok = true; } catch(e){}
-  toast(ok ? '已複製祝福，到下一頁「祈福心願」貼上' : `下一頁請貼上：${text}`, ok);
+  toast(ok ? '已複製祝福，到下一頁「祈福心願」貼上' : `下一頁請貼上：${text}`);
   setTimeout(() => { location.href = S.topic.apply; }, ok ? 900 : 2400);
 }
 let toastT = null;
-function toast(msg, ok){
-  const t = $('#toast');
-  t.innerHTML = `<i class="ph${ok?'-fill ph-check-circle':' ph-info'}"></i>${esc(msg)}`;
-  t.classList.add('on'); clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove('on'), 2800);
-}
+function toast(msg){ const t = $('#toast'); t.textContent = msg; t.classList.add('on'); clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove('on'), 2800); }
 
 /* ===== POC 控制 ===== */
 $('#pocBtn').onclick = () => {
@@ -550,8 +481,8 @@ $('#pocBtn').onclick = () => {
     <h3 style="margin-top:12px">其他香客</h3>
     <label><input type="checkbox" id="simChk" ${S.simOthers?'checked':''}>模擬其他香客入場與送祝福</label>
     <p>本頁是 POC：人數、統計、牆面播放回報與其他香客都是本機模擬，正式版由後端事件提供。直播為北港朝天宮正殿 YouTube 直播，播放器上方不疊任何元素。</p>
-    <button type="button" class="btn primary" id="simNow" style="min-height:48px;font-size:16px;margin-bottom:8px">現在來一位香客</button>
-    <button type="button" class="textbtn" id="pocClose" style="width:100%">關閉</button></div>`;
+    <button type="button" class="cta" id="simNow" style="height:48px;font-size:16px">現在來一位香客</button>
+    <button type="button" class="back" id="pocClose">關閉</button></div>`;
   document.body.appendChild(box);
   box.querySelectorAll('input[name=f]').forEach(r => r.onchange = () => { S.force = r.value; renderMedia(); });
   box.querySelector('#simChk').onchange = e => { S.simOthers = e.target.checked; };
