@@ -279,7 +279,8 @@ function uiState(){
 function renderMedia(){
   const st = uiState(), fb = $('#fallback');
   // 播放器準備好後就要可見；隱藏的播放器會被 YouTube 判定不可見而暫停
-  const showYt = st === 'live' || (st === 'connecting' && ytReady);
+  // 自動播放被擋時直接露出 YouTube 自己的播放鍵（不在播放器上疊任何東西）
+  const showYt = st === 'live' || (ytReady && (st === 'connecting' || st === 'blocked'));
   $('#yt').style.visibility = showYt ? 'visible' : 'hidden';
   fb.hidden = showYt;
   fb.style.backgroundImage = `url("${CFG.photo}")`;
@@ -292,6 +293,7 @@ function renderMedia(){
     none:['照片',false,'<span class="tag">廟內照片</span>'],
     small:['直播中',true,`<div>畫面較小，到 YouTube 觀看</div><a href="${CFG.youtubeUrl}" target="_blank" rel="noopener"><i class="ph ph-broadcast"></i>觀看直播</a>`]
   }[st];
+  if (st === 'blocked' && showYt) M[0] = '點播放看直播';
   $('#liveText').textContent = M[0];
   $('#liveChip').classList.toggle('on', M[1]);
   fb.innerHTML = M[2];
@@ -561,6 +563,12 @@ $('#pocBtn').onclick = () => {
 /* ===== 啟動 ===== */
 sizeMedia(); renderMedia(); renderPresence(); render(); loadYT();
 window.addEventListener('resize', () => { sizeMedia(); renderMedia(); });
+// 分頁回到前景時再試一次自動播放（背景分頁會被瀏覽器擋自動播放）
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible' && yt && ytReady && S.step !== 'card' && S.player !== 'playing') {
+    try { yt.mute(); yt.playVideo(); } catch(e){}
+  }
+});
 setTimeout(simulateOther, 2000);
 </script>
 </body>
