@@ -63,10 +63,14 @@ button{font:inherit;color:inherit}
 .scene::after{content:"";position:absolute;left:0;right:0;bottom:0;height:30%;background:linear-gradient(rgba(20,12,9,0),rgba(20,12,9,.28));pointer-events:none}
 .media.crop .scene{background-position:center 92%}
 /* Q 版香客：走進來時左右搖晃，到定點合掌低頭 */
-.scene .figure{bottom:auto;z-index:2;width:calc(56px * var(--s,1));height:calc(77px * var(--s,1));transition:left 2.3s linear,opacity .6s;filter:drop-shadow(0 4px 5px rgba(0,0,0,.45))}
-.media.crop .scene .figure{width:calc(46px * var(--s,1));height:calc(63px * var(--s,1))}
+.scene .figure{bottom:auto;width:auto;height:calc(92px * var(--s,1));transition-property:left,opacity;transition-timing-function:linear,ease;transition-duration:2s,.6s;filter:drop-shadow(0 4px 5px rgba(0,0,0,.45))}
+.media.crop .scene .figure{height:calc(72px * var(--s,1))}
+.scene .figure img{display:block;height:100%;width:auto;transform-origin:50% 96%;transition:transform .5s var(--ease);user-select:none;-webkit-user-drag:none}
+.scene .figure.bow img{transform:scaleY(.94) translateY(2px) rotate(-2deg)}
 .scene .figure svg{transform-origin:50% 96%}
-.scene .figure.walk svg{animation:wobble .36s ease-in-out infinite alternate}
+.scene .figure.walk svg,.scene .figure.walk img{animation:wobble .36s ease-in-out infinite alternate}
+.scene .figure.flip{scale:-1 1}
+.scene .figure.flip .me{scale:-1 1}
 @keyframes wobble{from{transform:rotate(-6deg) translateY(0)}to{transform:rotate(6deg) translateY(-3px)}}
 .scene .figure .arm{transform-box:fill-box;transform-origin:50% 12%;transition:transform .5s var(--ease)}
 .scene .figure.bow svg{transform:none}
@@ -75,7 +79,7 @@ button{font:inherit;color:inherit}
 .scene .figure.bow .arm.r{transform:rotate(24deg)}
 .scene .figure.mine::before{content:"";position:absolute;left:50%;bottom:-4px;width:120%;height:16px;transform:translateX(-50%);border-radius:50%;background:radial-gradient(ellipse,rgba(255,214,120,.85),rgba(255,214,120,0) 70%)}
 .scene .figure .me{color:#3A2208;background:var(--gold);border-radius:999px;padding:0 8px;line-height:18px;top:-22px}
-.scene .plaque{top:auto;max-width:50%;width:auto;transform:translateY(-4px);font-size:14px;padding:4px 10px}
+.scene .plaque{z-index:30;top:auto;max-width:50%;width:auto;transform:translateY(-4px);font-size:14px;padding:4px 10px}
 .scene .plaque.on{transform:none}
 .scene .plaque small{display:block;margin:0}
 /* 神像在照片中央 40–60%：祝福牌靠左或靠右，不遮神像 */
@@ -333,79 +337,60 @@ function loadYT(){
 
 /* ===== 殿前香客（Q 版背影，球狀漸層做出立體感） ===== */
 const actors = [];
-// 六種香客：髮色、上衣、褲子、配件
-const PEOPLE = [
-  { kind:'阿嬤',   hair:'#E4E0D8', top:'#8E6BB0', pants:'#4B4E63', acc:'bun' },
-  { kind:'阿公',   hair:'#B8B2A8', top:'#4F7A5C', pants:'#3E3A36', acc:'none' },
-  { kind:'女生',   hair:'#4A3026', top:'#E58FA0', pants:'#3F5A82', acc:'pony' },
-  { kind:'男人',   hair:'#2B211C', top:'#C8483A', pants:'#2F3440', acc:'cap', cap:'#3E6FB0' },
-  { kind:'小孩',   hair:'#2E2420', top:'#F2B33D', pants:'#4E7FB8', acc:'buns', scale:.8 },
-  { kind:'戴帽子', hair:'#3A2E28', top:'#5C8FA8', pants:'#4A4038', acc:'hat', cap:'#D8C39A' }
+// 八位香客：ChatGPT 生成的 Q 版 3D 背影素材（透明背景，同一比例尺，小孩本來就比較矮）
+const PEOPLE = ['grandma','grandpa','woman','man-cap','child','uncle-hat','student','office'].map(f => ({ file:f }));
+PEOPLE.forEach(p => { const i = new Image(); i.src = `assets/people/${p.file}.webp`; }); // 預先載入，走進來時不閃
+// 站位依這張正殿照片的地面挑選：避開神像正前方。b 越大越靠後（越小、越在後層），s 為遠近比例
+const SLOTS = [
+  { x:66, b:3,  s:1 },    // 0：使用者自己的位置
+  { x:14, b:2,  s:1 },
+  { x:86, b:5,  s:.94 },
+  { x:38, b:1,  s:1.06 },
+  { x:25, b:9,  s:.86 },
+  { x:77, b:11, s:.84 }
 ];
-let uid = 0;
-const shade = (id, base, light, dark) =>
-  `<radialGradient id="${id}" cx="38%" cy="30%" r="75%"><stop offset="0" stop-color="${light}"/><stop offset=".55" stop-color="${base}"/><stop offset="1" stop-color="${dark}"/></radialGradient>`;
-function tint(hex, amt){ // amt>0 變亮，<0 變暗
-  const n = parseInt(hex.slice(1), 16), f = c => Math.max(0, Math.min(255, Math.round(c + (amt > 0 ? (255 - c) : c) * amt)));
-  return '#' + [f(n >> 16), f((n >> 8) & 255), f(n & 255)].map(v => v.toString(16).padStart(2, '0')).join('');
-}
-function person(p){
-  const k = 'g' + (++uid), sk = '#F0C9A8';
-  const g = (name, c) => shade(k + name, c, tint(c, .45), tint(c, -.35));
-  const acc = {
-    bun:  `<circle cx="30" cy="9" r="7.5" fill="url(#${k}h)"/>`,
-    pony: `<ellipse cx="30" cy="44" rx="6" ry="11" fill="url(#${k}h)"/>`,
-    buns: `<circle cx="16" cy="12" r="6" fill="url(#${k}h)"/><circle cx="44" cy="12" r="6" fill="url(#${k}h)"/>`,
-    cap:  `<path d="M12.6 24 A17.4 17.4 0 0 1 47.4 24 Q30 20 12.6 24 Z" fill="url(#${k}c)"/><rect x="25" y="20.5" width="10" height="3.2" rx="1.6" fill="${tint(p.cap||'#3E6FB0', -.35)}"/>`,
-    hat:  `<ellipse cx="30" cy="20" rx="23" ry="6" fill="url(#${k}c)"/><path d="M15 20 Q16 5 30 5 Q44 5 45 20 Z" fill="url(#${k}c)"/>`,
-    none: ''
-  }[p.acc];
-  return `<svg viewBox="0 0 60 82" aria-hidden="true"><defs>${g('h', p.hair)}${g('t', p.top)}${g('p', p.pants)}${g('s', sk)}${p.cap ? g('c', p.cap) : ''}</defs>
-    <ellipse cx="30" cy="78.5" rx="17" ry="3.2" fill="rgba(0,0,0,.32)"/>
-    <g class="legs"><rect x="20" y="60" width="9" height="16" rx="4.5" fill="url(#${k}p)"/><rect x="31" y="60" width="9" height="16" rx="4.5" fill="url(#${k}p)"/>
-      <ellipse cx="24.5" cy="77" rx="5.5" ry="3" fill="#3A2C26"/><ellipse cx="35.5" cy="77" rx="5.5" ry="3" fill="#3A2C26"/></g>
-    <g class="arm l"><ellipse cx="13" cy="50" rx="4.6" ry="10" fill="url(#${k}t)"/></g>
-    <g class="arm r"><ellipse cx="47" cy="50" rx="4.6" ry="10" fill="url(#${k}t)"/></g>
-    <rect x="13" y="38" width="34" height="27" rx="13" fill="url(#${k}t)"/>
-    <g class="head">
-      <circle cx="13.2" cy="28" r="3" fill="url(#${k}s)"/><circle cx="46.8" cy="28" r="3" fill="url(#${k}s)"/>
-      ${p.acc === 'pony' ? '' : ''}
-      <circle cx="30" cy="25" r="17.4" fill="url(#${k}h)"/>
-      ${acc}
-    </g>
-  </svg>`;
-}
-// 站位依這張正殿照片（框高約為寬的 0.85 倍）的地面挑選：避開神像正前方，腳踩在畫面下緣的地板上；s 為遠近比例
-const SLOTS = [{ x:66, b:3, s:1 }, { x:13, b:2, s:1 }, { x:86, b:5, s:.92 }, { x:38, b:1, s:1.05 }];
 const slotX = i => SLOTS[i]?.x ?? 50;
-const MAX_ACTORS = 4;
-function place(a){
-  const sl = SLOTS[a.slot] || SLOTS[0];
+const MAX_ACTORS = 6;      // 畫面上同時最多幾位（含路過的人）
+const WALK_SPEED = 0.055;  // 每移動 1% 寬度需要的秒數
+function place(a, sl){
+  sl = sl || SLOTS[a.slot] || SLOTS[0];
   a.el.style.bottom = sl.b + '%';
-  a.el.style.setProperty('--s', (sl.s || 1) * (a.p.scale || 1));
+  a.el.style.zIndex = 20 - sl.b;               // 越前面越上層
+  a.el.style.setProperty('--s', sl.s || 1);
 }
-function walkTo(a, x){
+function walkTo(a, x, done){
+  const from = parseFloat(a.el.style.left) || 0, dur = Math.max(.8, Math.abs(x - from) * WALK_SPEED);
   a.el.classList.add('walk');
+  a.el.classList.toggle('flip', x < from);       // 往左走時轉向
+  a.el.style.transitionDuration = dur + 's, .6s';
   a.el.style.left = x + '%';
-  clearTimeout(a.walkT); a.walkT = setTimeout(() => a.el.classList.remove('walk'), 2300);
+  clearTimeout(a.walkT);
+  a.walkT = setTimeout(() => { a.el.classList.remove('walk', 'flip'); done && done(); }, dur * 1000);
 }
-function addActor({ mine=false }){
-  const live = actors.filter(a => !a.leaving);
-  if (live.length >= MAX_ACTORS && !mine) { bumpOverflow(); return null; }
-  const used = live.map(x => x.slot);
+function makeActor(mine){
   const p = PEOPLE[Math.floor(Math.random() * PEOPLE.length)];
   const el = document.createElement('div');
   el.className = 'figure' + (mine ? ' mine' : '');
-  el.innerHTML = person(p) + (mine ? '<span class="me">你</span>' : '');
-  const a = { el, p, mine, leaving:false, slot: mine ? 0 : ([1,2,3,0].find(s => !used.includes(s)) ?? 1) };
-  // 從畫面外走進殿內：從離站位較近的左右邊緣入場
-  el.style.left = slotX(a.slot) < 50 ? '-16%' : '116%';
-  place(a);
-  $('#scene').appendChild(el);
-  if (mine) {
-    const o = live.find(x => x.slot === 0);
-    if (o) { o.slot = [1,2,3].find(s => !used.includes(s)) ?? 1; place(o); walkTo(o, slotX(o.slot)); }
+  el.innerHTML = `<img src="assets/people/${p.file}.webp" alt="" draggable="false">` + (mine ? '<span class="me">你</span>' : '');
+  return { el, p, mine, leaving:false, slot:-1 };
+}
+function freeSlot(){
+  const used = actors.filter(a => !a.leaving && a.slot >= 0).map(a => a.slot);
+  const free = [1,2,3,4,5].filter(s => !used.includes(s));
+  return free.length ? free[Math.floor(Math.random() * free.length)] : -1;
+}
+function addActor({ mine=false, slot }){
+  const live = actors.filter(a => !a.leaving);
+  if (!mine && live.length >= MAX_ACTORS) { bumpOverflow(); return null; }
+  const a = makeActor(mine);
+  a.slot = mine ? 0 : (slot ?? freeSlot());
+  if (a.slot < 0) return null;
+  if (mine) { // 自己的位置被占用時，請對方先離開
+    const o = live.find(x => x.slot === 0); if (o) leave(o, 0);
   }
+  a.el.style.left = slotX(a.slot) < 50 ? '-16%' : '116%'; // 從離站位較近的一側走進來
+  place(a);
+  $('#scene').appendChild(a.el);
   actors.push(a);
   requestAnimationFrame(() => requestAnimationFrame(() => walkTo(a, slotX(a.slot))));
   return a;
@@ -420,14 +405,18 @@ function plaque(text, sub, a){
   p.style.bottom = (S.step === 'card' ? 52 : 34) + '%'; // 低於神將頭部的高度
   $('#scene').appendChild(p);
   requestAnimationFrame(() => p.classList.add('on'));
+  plaqueUntil = Date.now() + 5200;
   setTimeout(() => { p.classList.remove('on'); setTimeout(() => p.remove(), 400); }, 5200);
 }
+let plaqueUntil = 0;
 function bow(a){ a.el.classList.add('bow'); }
 function leave(a, ms){
   setTimeout(() => {
+    if (a.leaving) return;
     a.leaving = true; a.el.classList.remove('bow');
-    walkTo(a, slotX(a.slot) < 50 ? -16 : 116); setTimeout(() => a.el.classList.add('out'), 1600);
-    setTimeout(() => { a.el.remove(); const i = actors.indexOf(a); if (i > -1) actors.splice(i, 1); }, 2400);
+    const x = parseFloat(a.el.style.left) || 50;
+    const out = Math.random() < .5 ? (x < 50 ? -16 : 116) : (x < 50 ? 116 : -16); // 有時從另一側離開，像穿過殿內
+    walkTo(a, out, () => { a.el.remove(); const i = actors.indexOf(a); if (i > -1) actors.splice(i, 1); });
   }, ms);
 }
 let ovN = 0, ovT = null;
@@ -438,19 +427,43 @@ function bumpOverflow(){
 function renderPresence(){
   $('#presence').textContent = S.online >= 3 ? `此刻 ${S.online} 人在線參與` : '此刻，還有人正在留下祝福';
 }
+/*
+  POC 的熱鬧人流（正式版由後端 venue_event 驅動，每個角色都對應真實事件）：
+  - 祈福（55%）：走到空位 → 合掌 → 停留 → 離開；約一半會冒出祝福牌
+  - 路過（30%）：沿著殿前地面從一側走到另一側，不停留
+  - 看看就走（15%）：走進來站一下，沒有合掌就離開
+*/
+function passBy(){
+  const live = actors.filter(a => !a.leaving);
+  if (live.length >= MAX_ACTORS) return;
+  const a = makeActor(false);
+  const fromLeft = Math.random() < .5, sl = { b: [1,4,8][Math.floor(Math.random()*3)], s: 1 };
+  sl.s = sl.b > 6 ? .86 : 1;
+  a.el.style.left = fromLeft ? '-16%' : '116%';
+  place(a, sl);
+  $('#scene').appendChild(a.el);
+  actors.push(a);
+  a.leaving = true; // 路過的人不占站位
+  requestAnimationFrame(() => requestAnimationFrame(() =>
+    walkTo(a, fromLeft ? 116 : -16, () => { a.el.remove(); const i = actors.indexOf(a); if (i > -1) actors.splice(i, 1); })));
+}
 function simulateOther(){
   if (!S.simOthers) return;
+  const r = Math.random();
+  if (r < .30) { passBy(); return; }
   const a = addActor({});
   if (!a) return;
-  if (Math.random() < .75) {
+  const arrive = Math.abs(slotX(a.slot) - (slotX(a.slot) < 50 ? -16 : 116)) * WALK_SPEED * 1000;
+  if (r < .85) {
     setTimeout(() => {
-      bow(a); plaque(OTHERS[Math.floor(Math.random()*OTHERS.length)], '一位香客', a);
+      bow(a);
+      if (Math.random() < .5 && Date.now() > plaqueUntil && S.step === 'home') plaque(OTHERS[Math.floor(Math.random()*OTHERS.length)], '一位香客', a);
       S.today.blessings++; const n = $('#nBless'); if (n) n.textContent = S.today.blessings;
-      leave(a, 6500);
-    }, 2500 + Math.random()*4000);
-  } else leave(a, 15000); // 15 秒內沒送出就離開，不做祈福動作
+      leave(a, 3500 + Math.random()*3500);
+    }, arrive + 500 + Math.random()*1200);
+  } else leave(a, arrive + 1500 + Math.random()*1500);
 }
-(function loop(){ setTimeout(() => { simulateOther(); loop(); }, 9000 + Math.random()*9000); })();
+(function loop(){ setTimeout(() => { simulateOther(); loop(); }, 1800 + Math.random()*2600); })();
 setInterval(() => { S.online = Math.max(2, S.online + (Math.random() < .5 ? -1 : 1)); renderPresence(); }, 7000);
 
 /* ===== 畫面 ===== */
