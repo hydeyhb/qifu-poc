@@ -133,7 +133,7 @@ button{font:inherit;color:inherit}
 .slips{display:flex;flex-direction:column;gap:10px}
 .slip{position:relative;display:flex;align-items:center;justify-content:space-between;gap:12px;width:100%;min-height:56px;text-align:left;border:1px solid #E9C9C0;border-left:5px solid var(--red);background:#F8E7E1;border-radius:4px;padding:10px 16px;font:600 18px/1.4 var(--serif);color:var(--wood);cursor:pointer;transition:background .2s,color .2s,transform .15s var(--ease)}
 .slip:active{transform:scale(.99)}
-.slip .tick{font:700 15px var(--sans);color:var(--gold);opacity:0;transition:opacity .2s}
+.slip .tick{font:700 15px var(--sans);color:var(--gold)}
 .slip[aria-checked="true"]{background:var(--red);color:var(--paper);border-color:var(--gold)}
 .slip[aria-checked="true"] .tick{opacity:1}
 .slip:disabled{cursor:default}
@@ -169,6 +169,16 @@ button{font:inherit;color:inherit}
 .cta.done{box-shadow:none}
 .cta.done{background:#3F6B4E}
 .sub{display:block;margin-top:6px;font-size:13.5px;color:var(--wood)}
+.titlebar{display:flex;align-items:center;gap:8px;margin:-8px 0 10px}
+.titlebar .h2{margin:0}
+.backtop{display:inline-flex;align-items:center;min-height:48px;margin-left:-6px;padding:0 6px;border:0;background:none;color:var(--ink-2,#5E504B);font-size:16px;cursor:pointer}
+.oneline{margin:16px 0 6px;font-size:16px;font-weight:500}
+.how2 summary{min-height:44px;display:flex;align-items:center;font-size:15px;color:var(--muted);cursor:pointer}
+.how2 summary::-webkit-details-marker{display:none}
+.how2 summary::after{content:"›";margin-left:8px;font-size:18px;transition:transform .2s}
+.how2[open] summary::after{transform:rotate(90deg)}
+.how2 p{margin:0 0 8px;font-size:15px}
+.stamp.still{animation:none;opacity:1;transform:rotate(-3deg)}
 /* 首頁三步說明：讓第一次來的人知道按下去會發生什麼 */
 .steps3{display:flex;justify-content:center;align-items:center;flex-wrap:nowrap;gap:4px 8px;margin:0 0 10px;padding:0;list-style:none;font-size:14px;color:var(--wood)}
 .steps3 li{display:flex;align-items:center;gap:5px;white-space:nowrap}
@@ -213,7 +223,7 @@ button{font:inherit;color:inherit}
     <div class="fallback" id="fallback" hidden></div>
   </div>
   <div class="modebar">
-    <span id="modeNote">廟內照片・香客為示意</span>
+    <span id="modeNote"></span>
     <button type="button" id="modeBtn">看即時直播 ›</button>
   </div>
 
@@ -267,6 +277,7 @@ let yt = null, ytReady = false, stallT = null;
 function canEmbed(){ return $('#media').clientWidth >= 300 && window.innerHeight >= 560; }
 function sizeMedia(){
   document.querySelector('.modebar').hidden = S.step !== 'home';
+  document.querySelector('.venue').hidden = S.step !== 'home'; // 選句、寫卡時不重複顯示廟名，把空間留給籤條
   const w = $('#media').clientWidth;
   const crop = S.step !== 'home' && S.mode === 'photo'; // 選句頁與寫卡頁只留殿前地面一條，讓籤條和卡片一進頁就看得到
   $('#media').classList.toggle('crop', crop);
@@ -286,8 +297,8 @@ function uiState(){
 function renderMedia(){
   const photo = S.mode === 'photo';
   $('#scene').hidden = !photo;
-  $('#modeNote').textContent = photo ? '廟內照片・香客為示意' : '即時直播畫面不疊加香客';
-  $('#modeBtn').textContent = photo ? '看即時直播 ›' : '回到殿前互動 ›';
+  $('#modeNote').textContent = photo ? '' : '直播畫面不疊加香客';
+  $('#modeBtn').textContent = photo ? '看直播 ›' : '回殿前 ›';
   if (photo) {
     $('#yt').style.visibility = 'hidden';
     $('#fallback').hidden = true;
@@ -455,10 +466,11 @@ function passBy(){
   requestAnimationFrame(() => requestAnimationFrame(() =>
     walkTo(a, fromLeft ? 116 : -16, () => { a.el.remove(); const i = actors.indexOf(a); if (i > -1) actors.splice(i, 1); })));
 }
+function calmScene(){ actors.filter(a => !a.mine && !a.leaving).forEach((a, i) => leave(a, 300 + i * 250)); }
 function simulateOther(){
-  if (!S.simOthers) return;
+  if (!S.simOthers || S.step !== 'home') return;
   const r = Math.random();
-  if (r < .30) { passBy(); return; }
+  if (r < .30) { if (!matchMedia('(prefers-reduced-motion: reduce)').matches) passBy(); return; }
   const a = addActor({});
   if (!a) return;
   const arrive = Math.abs(slotX(a.slot) - (slotX(a.slot) < 50 ? -16 : 116)) * WALK_SPEED * 1000;
@@ -496,7 +508,7 @@ function render(){
         </div>
         <a class="more-link" href="${CFG.groupUrl}" target="_blank" rel="noopener"><span>直接寫祈福卡</span><span aria-hidden="true">›</span></a>
       </section>`;
-    d.innerHTML = `<ol class="steps3" aria-label="怎麼送祝福"><li><b>1</b>點一支籤</li><li><b>2</b>按送出</li><li><b>3</b>小人進殿合掌</li></ol><button class="cta" id="go" type="button">免費送一句祝福</button>`;
+    d.innerHTML = `<ol class="steps3" aria-label="怎麼送祝福"><li><b>1</b>選一句</li><li><b>2</b>送出</li><li><b>3</b>小人進殿合掌</li></ol><button class="cta" id="go" type="button">免費送一句祝福</button>`;
     $('#go').onclick = startBless;
   }
 
@@ -504,74 +516,64 @@ function render(){
     const t = S.topic;
     v.innerHTML = `
       <section class="sec">
-        <h2 class="h2">點一支祝福籤，再按送出</h2>
+        <div class="titlebar"><button class="backtop" type="button" id="back">‹ 回殿前</button><h2 class="h2">選一句祝福</h2></div>
         <div class="tabs" role="tablist" aria-label="祝福主題">
           ${CFG.topics.map(x => `<button type="button" role="tab" data-t="${x.id}" aria-selected="${x.id===t.id}" ${S.sent?'disabled':''}>${x.name}</button>`).join('')}
         </div>
         <div class="slips" role="radiogroup" aria-label="祝福句">
-          ${t.phrases.map(p => `<button type="button" class="slip" role="radio" aria-checked="${p===S.phrase}" data-p="${esc(p)}" ${S.sent?'disabled':''}>${esc(p)}<span class="tick">已選</span>${p===S.phrase&&S.sent?'<span class="stamp" id="stamp">祝福<br>已送</span>':''}</button>`).join('')}
+          ${t.phrases.map(p => `<button type="button" class="slip" role="radio" aria-checked="${p===S.phrase}" data-p="${esc(p)}" ${S.sent?'disabled':''}>${esc(p)}${p===S.phrase?'<span class="tick" aria-hidden="true">已選</span>':''}${p===S.phrase&&S.sent?'<span class="stamp" id="stamp">祝福<br>已送</span>':''}</button>`).join('')}
         </div>
-        <button class="back" type="button" id="back">先不用，回到殿前</button>
       </section>`;
-    d.innerHTML = S.sent
-      ? `<button class="cta done" type="button" disabled style="background:#3F6B4E;color:#fff">祝福已送到殿前</button><span class="sub">接著可以把它寫成祈福卡</span>`
-      : `<button class="cta" id="send" type="button" ${S.phrase?'':'disabled'}>${S.phrase?'送出這句祝福':'先點上面一支祝福籤'}</button><span class="sub">${S.phrase?'送出後，你的小人會在殿內合掌':'免費・祝福句由廟方事先核准'}</span>`;
+    // 底部按鈕固定同一位置，只換文字：請先選一句 → 送出祝福 → 送出中… → 寫成祈福卡（失敗時：重試送出）
+    const label = S.sent ? '寫成祈福卡' : S.sending ? '送出中…' : S.failed ? '重試送出' : S.phrase ? '送出祝福' : '請先選一句';
+    d.innerHTML = `<button class="cta" id="send" type="button" ${(!S.phrase || S.sending) ? 'disabled' : ''}>${label}</button>`;
     v.querySelectorAll('.tabs button').forEach(b => b.onclick = () => { S.topic = CFG.topics.find(x => x.id === b.dataset.t); S.phrase = null; render(); });
-    v.querySelectorAll('.slip').forEach(b => b.onclick = () => { S.phrase = b.dataset.p; render(); });
-    $('#back').onclick = () => { if (me && !S.sent) { leave(me, 0); me = null; } S.step = 'home'; render(); };
-    const s = $('#send'); if (s) s.onclick = send;
-    const st = $('#stamp'); if (st) requestAnimationFrame(() => st.classList.add('on'));
+    v.querySelectorAll('.slip').forEach(b => b.onclick = () => { S.phrase = b.dataset.p; S.failed = false; render(); });
+    $('#back').onclick = () => { if (me) { leave(me, 0); me = null; } S.step = 'home'; S.sent = false; render(); window.scrollTo({ top:0, behavior:'smooth' }); };
+    $('#send').onclick = S.sent ? toCard : send;
+    const st = $('#stamp'); if (st && !S.stamped) { S.stamped = true; requestAnimationFrame(() => st.classList.add('on')); } else if (st) st.classList.add('on', 'still');
   }
 
   if (S.step === 'card') {
     const t = S.topic;
     v.innerHTML = `
       <section class="sec">
-        ${statusLine()}
-        <h2 class="h2">把這句祝福，寫成一張祈福卡</h2>
-        <p class="lead">快速祝福只會短暫出現。寫成${esc(t.product)}，審核後會加入祈福牆的卡片輪播。</p>
+        <div class="titlebar"><button class="backtop" type="button" id="back2">‹ 回殿前</button><h2 class="h2">寫成祈福卡</h2></div>
         <div class="preview" aria-label="祈福卡預覽">
           <div class="side">${esc(t.side)}</div>
           <div class="body">北港朝天宮・文昌殿<b>${esc(S.phrase)}</b>祈福人：你的名字</div>
           <span class="flag">預覽・尚未送出</span>
         </div>
-        <ol class="steps">
-          <li>填姓名與 Email，貼上這句祝福</li>
-          <li>選擇祈福心意金</li>
-          <li>付款完成，祈福卡排入祈福牆</li>
-        </ol>
-        <button class="back" type="button" id="back2">先不用，回到殿前</button>
+        <p class="oneline">下一頁貼上祝福即可</p>
+        <details class="how2"><summary>怎麼做？</summary><p>填寫資料 › 選心意金 › 完成祈福</p></details>
       </section>`;
-    d.innerHTML = `<button class="cta" id="apply" type="button">寫成${esc(t.product)}</button><span class="sub">會先幫你複製這句祝福，到下一頁貼上</span>`;
+    d.innerHTML = `<button class="cta" id="apply" type="button">繼續填寫祈福卡</button>`;
     $('#apply').onclick = apply;
     prefetchApply(t.apply);
-    $('#back2').onclick = () => { S.step = 'home'; S.sent = false; S.phrase = null; S.wall = null; render(); window.scrollTo({ top:0, behavior:'smooth' }); };
+    $('#back2').onclick = () => { if (me) { leave(me, 0); me = null; } S.step = 'home'; S.sent = false; S.phrase = null; S.wall = null; render(); window.scrollTo({ top:0, behavior:'smooth' }); };
   }
-}
-function statusLine(){
-  if (S.wall === 'played') return `<div class="status ok" id="statusLine"><i></i>你的祝福正在祈福牆上（示意）</div>`;
-  if (S.wall === 'unconfirmed') return `<div class="status" id="statusLine"><i></i>祝福已送出，目前無法確認牆面展示</div>`;
-  return `<div class="status" id="statusLine"><i></i>祝福已送出，祈福牆準備播放</div>`;
 }
 
 /* ===== 流程 ===== */
 function startBless(){
-  S.step = 'bless'; S.sent = false; S.phrase = null; S.wall = null;
+  S.step = 'bless'; S.sent = false; S.sending = false; S.failed = false; S.stamped = false; S.phrase = null; S.wall = null;
+  calmScene(); // 選句時殿前安靜下來，只留你的小人
   if (!me || me.leaving) me = addActor({ mine:true });
   render();
-  window.scrollTo({ top: $('#media').offsetTop - 8, behavior:'smooth' });
+  window.scrollTo({ top:0 });
 }
 function send(){
-  if (!S.phrase || S.sent) return;
-  // 正式版：後端 accepted 後才蓋印；失敗則停在原畫面可重試
-  S.sent = true; S.wall = 'waiting'; S.today.blessings++;
-  if (!me || me.leaving) me = addActor({ mine:true });
-  setTimeout(() => { bow(me); plaque(S.phrase, '你的祝福', me); }, 250);
-  render();
-  setTimeout(() => { S.wall = 'played'; const l = $('#statusLine'); if (l) l.outerHTML = statusLine(); }, 3000); // 正式版依牆端回報 wall_played
-  setTimeout(() => { S.step = 'card'; render(); window.scrollTo({ top:0, behavior:'smooth' }); }, 1600);
-  setTimeout(() => { if (me) { leave(me, 0); me = null; } }, 9000);
+  if (!S.phrase || S.sent || S.sending) return;
+  S.sending = true; render();
+  // 正式版：後端 accepted 後才蓋印；失敗時 S.failed = true，按鈕變「重試送出」
+  setTimeout(() => {
+    S.sending = false; S.sent = true; S.wall = 'waiting'; S.today.blessings++;
+    if (!me || me.leaving) me = addActor({ mine:true });
+    bow(me); plaque(S.phrase, '你的祝福', me);
+    render(); // 不自動跳頁：停在合掌這一刻，由使用者按「寫成祈福卡」
+  }, 450);
 }
+function toCard(){ S.step = 'card'; render(); window.scrollTo({ top:0, behavior:'smooth' }); }
 async function apply(){
   const btn = $('#apply'); btn.disabled = true; btn.textContent = '前往填寫頁…';
   const copy = navigator.clipboard ? navigator.clipboard.writeText(S.phrase || '').catch(() => {}) : Promise.resolve();
