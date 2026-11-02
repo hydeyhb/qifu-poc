@@ -58,7 +58,26 @@ button{font:inherit;color:inherit}
 .fallback .bar::after{content:"";display:block;width:40%;height:100%;background:var(--gold);animation:slide 1.2s ease-in-out infinite}
 @keyframes slide{from{transform:translateX(-100%)}to{transform:translateX(250%)}}
 
-/* 殿前舞台：唯一允許剪紙人物的地方 */
+/* 殿前照片：剪紙香客直接疊在廟方照片上（照片是自有素材，可以疊加；YouTube 播放器不行） */
+.scene{position:absolute;inset:0;overflow:hidden;background:#2A1C16 url("assets/temple.jpg") center/cover no-repeat;transition:background-position .45s var(--ease)}
+.scene::after{content:"";position:absolute;left:0;right:0;bottom:0;height:30%;background:linear-gradient(rgba(20,12,9,0),rgba(20,12,9,.28));pointer-events:none}
+.media.crop .scene{background-position:center 92%}
+.scene .figure{bottom:auto;z-index:2;width:50px;height:75px;filter:drop-shadow(0 3px 5px rgba(0,0,0,.5))}
+.media.crop .scene .figure{width:44px;height:66px}
+.figure.walk svg{animation:step .32s ease-in-out infinite alternate}
+@keyframes step{from{transform:translateY(0)}to{transform:translateY(-3px)}}
+.scene .plaque{top:auto;max-width:50%;width:auto;transform:translateY(-4px);font-size:14px;padding:4px 10px}
+.scene .plaque.on{transform:none}
+.scene .plaque small{display:block;margin:0}
+/* 神像在照片中央 40–60%：祝福牌靠左或靠右，不遮神像 */
+.scene .plaque.l{left:3%!important;text-align:left}
+.scene .plaque.r{left:auto!important;right:3%;text-align:right}
+.scene .overflow{bottom:10px;color:#FFF3DF;text-shadow:0 1px 3px rgba(0,0,0,.7)}
+.modebar{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:8px 16px;font-size:13px;color:var(--muted);border-bottom:1px solid var(--paper-deep)}
+.modebar button{border:0;background:none;color:var(--red);font-size:14.5px;font-weight:500;padding:6px 0;cursor:pointer}
+.modebar button:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
+
+/* 殿前舞台（舊版，保留樣式給比較用） */
 .stage{position:relative;height:108px;overflow:hidden;background:linear-gradient(180deg,var(--wood-2) 0%,var(--wood) 45%,#6A4F3E 100%);border-top:1px solid var(--gold);transition:height .45s var(--ease)}
 .stage .line{position:absolute;left:16px;right:16px;bottom:18px;height:1px;background:rgba(201,155,84,.35)}
 .stage.slim{height:96px}
@@ -167,13 +186,15 @@ button{font:inherit;color:inherit}
   </section>
 
   <div class="media" id="media">
+    <div class="scene" id="scene" aria-label="殿前">
+      <span class="overflow" id="overflow"></span>
+    </div>
     <div class="yt" id="yt"></div>
     <div class="fallback" id="fallback" hidden></div>
   </div>
-
-  <div class="stage" id="stage" aria-label="殿前">
-    <div class="line"></div>
-    <span class="overflow" id="overflow"></span>
+  <div class="modebar">
+    <span id="modeNote">廟內照片・香客為示意</span>
+    <button type="button" id="modeBtn">看即時直播 ›</button>
   </div>
 
   <main id="view"></main>
@@ -213,6 +234,7 @@ const RECENT = [
 
 /* ===== 狀態 ===== */
 const S = {
+  mode:'photo', // photo：廟內照片＋香客疊加；live：YouTube 即時直播（不疊加任何東西）
   step:'home', topic:CFG.topics[0], phrase:null, sent:false, wall:null,
   source:'live', player:'loading', force:'auto', simOthers:true,
   online:7, today:{ wishes:36, blessings:58 }
@@ -225,7 +247,9 @@ let yt = null, ytReady = false, stallT = null;
 function canEmbed(){ return $('#media').clientWidth >= 300 && window.innerHeight >= 560; }
 function sizeMedia(){
   const w = $('#media').clientWidth;
-  $('#media').style.height = Math.max(200, Math.round(w * 9 / 16)) + 'px';
+  const crop = S.step === 'card' && S.mode === 'photo'; // 寫卡頁只留殿前地面一條，讓卡片資訊好讀
+  $('#media').classList.toggle('crop', crop);
+  $('#media').style.height = crop ? '150px' : Math.max(200, Math.round(w * 9 / 16)) + 'px';
   $('#app').classList.toggle('nosticky', window.innerHeight < 560);
 }
 function uiState(){
@@ -239,6 +263,17 @@ function uiState(){
   return 'connecting';
 }
 function renderMedia(){
+  const photo = S.mode === 'photo';
+  $('#scene').hidden = !photo;
+  $('#modeNote').textContent = photo ? '廟內照片・香客為示意' : '即時直播畫面不疊加香客';
+  $('#modeBtn').textContent = photo ? '看即時直播 ›' : '回到殿前互動 ›';
+  if (photo) {
+    $('#yt').style.visibility = 'hidden';
+    $('#fallback').hidden = true;
+    $('#liveText').textContent = '殿前互動';
+    $('#liveChip').classList.remove('on');
+    return;
+  }
   const st = uiState(), fb = $('#fallback');
   // 播放器準備好就保持可見（隱藏會被 YouTube 暫停）；自動播放被擋時直接露出 YouTube 自己的播放鍵
   const showYt = st === 'live' || (ytReady && (st === 'connecting' || st === 'blocked'));
@@ -303,32 +338,43 @@ function figure(fill){
     </g>
   </svg>`;
 }
-const slotX = i => [50, 26, 74][i] ?? 50;
+// 站位依照這張正殿照片的地面挑選：避開神像正前方與香爐，腳踩在畫面下緣的地板上
+const SLOTS = [{ x:61, b:3 }, { x:22, b:2 }, { x:79, b:4 }];
+const slotX = i => SLOTS[i]?.x ?? 50;
+function walkTo(a, x){
+  a.el.classList.add('walk');
+  a.el.style.left = x + '%';
+  clearTimeout(a.walkT); a.walkT = setTimeout(() => a.el.classList.remove('walk'), 1150);
+}
 function addActor({ mine=false }){
   const live = actors.filter(a => !a.leaving);
   if (live.length >= 3 && !mine) { bumpOverflow(); return null; }
   const el = document.createElement('div');
   el.className = 'figure';
   el.innerHTML = figure(mine ? '#9A3A2E' : '#7A2A24') + (mine ? '<span class="me">你</span>' : '');
-  el.style.left = Math.random() < .5 ? '-12%' : '112%';
-  $('#stage').appendChild(el);
   const used = live.map(x => x.slot);
   const a = { el, mine, leaving:false, slot: mine ? 0 : ([1,2,0].find(s => !used.includes(s)) ?? 1) };
+  // 從畫面外走進殿內：從離站位較近的左右邊緣入場
+  el.style.left = slotX(a.slot) < 50 ? '-14%' : '114%';
+  el.style.bottom = (SLOTS[a.slot]?.b ?? 3) + '%';
+  $('#scene').appendChild(el);
   if (mine) {
     const o = live.find(x => x.slot === 0);
-    if (o) { o.slot = [1,2].find(s => !used.includes(s)) ?? 1; o.el.style.left = slotX(o.slot) + '%'; }
+    if (o) { o.slot = [1,2].find(s => !used.includes(s)) ?? 1; o.el.style.bottom = SLOTS[o.slot].b + '%'; walkTo(o, slotX(o.slot)); }
   }
   actors.push(a);
-  requestAnimationFrame(() => requestAnimationFrame(() => { el.style.left = slotX(a.slot) + '%'; }));
+  requestAnimationFrame(() => requestAnimationFrame(() => walkTo(a, slotX(a.slot))));
   return a;
 }
-function plaque(text, sub){
-  // 祝福文字牌：一次只顯示一則，有事件才出現
+function plaque(text, sub, a){
+  // 祝福文字牌：一次只顯示一則，有事件才出現；浮在香客上方，不遮神像
   document.querySelectorAll('.plaque').forEach(p => p.remove());
   const p = document.createElement('div');
   p.className = 'plaque';
   p.innerHTML = esc(text) + (sub ? `<small>${esc(sub)}</small>` : '');
-  $('#stage').appendChild(p);
+  p.classList.add(a && slotX(a.slot) < 50 ? 'l' : 'r');
+  p.style.bottom = (S.step === 'card' ? 52 : 34) + '%'; // 低於神將頭部的高度
+  $('#scene').appendChild(p);
   requestAnimationFrame(() => p.classList.add('on'));
   setTimeout(() => { p.classList.remove('on'); setTimeout(() => p.remove(), 400); }, 5200);
 }
@@ -336,7 +382,7 @@ function bow(a){ a.el.classList.add('bow'); }
 function leave(a, ms){
   setTimeout(() => {
     a.leaving = true; a.el.classList.remove('bow');
-    a.el.style.left = a.slot === 2 ? '112%' : '-12%'; a.el.classList.add('out');
+    walkTo(a, slotX(a.slot) < 50 ? -14 : 114); a.el.classList.add('out');
     setTimeout(() => { a.el.remove(); const i = actors.indexOf(a); if (i > -1) actors.splice(i, 1); }, 1200);
   }, ms);
 }
@@ -354,7 +400,7 @@ function simulateOther(){
   if (!a) return;
   if (Math.random() < .75) {
     setTimeout(() => {
-      bow(a); plaque(OTHERS[Math.floor(Math.random()*OTHERS.length)], '一位香客');
+      bow(a); plaque(OTHERS[Math.floor(Math.random()*OTHERS.length)], '一位香客', a);
       S.today.blessings++; const n = $('#nBless'); if (n) n.textContent = S.today.blessings;
       leave(a, 6500);
     }, 2500 + Math.random()*4000);
@@ -367,10 +413,10 @@ setInterval(() => { S.online = Math.max(2, S.online + (Math.random() < .5 ? -1 :
 let me = null;
 function render(){
   const v = $('#view'), d = $('#dock');
-  $('#media').hidden = S.step === 'card';
-  $('#stage').classList.toggle('slim', S.step === 'card');
+  // 送祝福時一定回到殿前互動（照片模式），讓使用者看到自己的小人
+  if (S.step !== 'home' && S.mode !== 'photo') setMode('photo');
+  sizeMedia();
   if (S.step === 'card' && yt && ytReady) { try { yt.pauseVideo(); } catch(e){} }
-  if (S.step !== 'card' && yt && ytReady && S.player !== 'playing') { try { yt.playVideo(); } catch(e){} }
 
   if (S.step === 'home') {
     v.innerHTML = `
@@ -455,7 +501,7 @@ function send(){
   // 正式版：後端 accepted 後才蓋印；失敗則停在原畫面可重試
   S.sent = true; S.wall = 'waiting'; S.today.blessings++;
   if (!me || me.leaving) me = addActor({ mine:true });
-  setTimeout(() => { bow(me); plaque(S.phrase, '你的祝福'); }, 250);
+  setTimeout(() => { bow(me); plaque(S.phrase, '你的祝福', me); }, 250);
   render();
   setTimeout(() => { S.wall = 'played'; const l = $('#statusLine'); if (l) l.outerHTML = statusLine(); }, 3000); // 正式版依牆端回報 wall_played
   setTimeout(() => { S.step = 'card'; render(); window.scrollTo({ top:0, behavior:'smooth' }); }, 1600);
@@ -492,11 +538,23 @@ $('#pocBtn').onclick = () => {
 };
 
 /* ===== 啟動 ===== */
-sizeMedia(); renderMedia(); renderPresence(); render(); loadYT();
+/* ===== 殿前互動／即時直播切換 ===== */
+let ytLoaded = false;
+function setMode(m){
+  S.mode = m;
+  if (m === 'live') {
+    if (!ytLoaded) { ytLoaded = true; loadYT(); } // 第一次切到直播才載入 YouTube，省流量
+    else if (yt && ytReady) { try { yt.playVideo(); } catch(e){} }
+  } else if (yt && ytReady) { try { yt.pauseVideo(); } catch(e){} }
+  sizeMedia(); renderMedia();
+}
+$('#modeBtn').onclick = () => setMode(S.mode === 'photo' ? 'live' : 'photo');
+
+sizeMedia(); renderMedia(); renderPresence(); render();
 window.addEventListener('resize', () => { sizeMedia(); renderMedia(); });
 // 分頁回到前景時再試一次自動播放（背景分頁會被瀏覽器擋自動播放）
 document.addEventListener('visibilitychange', () => {
-  if (document.visibilityState === 'visible' && yt && ytReady && S.step !== 'card' && S.player !== 'playing') {
+  if (document.visibilityState === 'visible' && S.mode === 'live' && yt && ytReady && S.player !== 'playing') {
     try { yt.mute(); yt.playVideo(); } catch(e){}
   }
 });
