@@ -156,7 +156,10 @@ button{font:inherit;color:inherit}
 .titlebar{display:flex;align-items:center;gap:8px;margin:-8px 0 10px}
 .titlebar .h2{margin:0}
 .backtop{display:inline-flex;align-items:center;min-height:48px;margin-left:-6px;padding:0 6px;border:0;background:none;color:var(--muted);font-size:16px;cursor:pointer}
-.oneline{margin:16px 0 4px;font-size:16px;font-weight:500;color:var(--wood)}
+/* 寫卡頁主按鈕上方的說明：讓人知道按下去會複製祝福 */
+.dockhint{margin:0 0 10px;font-size:14px;font-weight:500;color:var(--muted)}
+.dockhint b{color:var(--wood);font-weight:700}
+.how2{margin-top:12px}
 .how2 summary{min-height:48px;display:flex;align-items:center;font-size:16px;font-weight:500;color:var(--muted);cursor:pointer;list-style:none}
 .how2 summary::-webkit-details-marker{display:none}
 .how2 summary::after{content:"›";margin-left:8px;font-size:18px;transition:transform .2s}
@@ -514,10 +517,9 @@ function render(){
           <div class="body">北港朝天宮・文昌殿<b>${esc(S.phrase)}</b>祈福人：你的名字</div>
           <span class="flag">預覽・尚未送出</span>
         </div>
-        <p class="oneline">下一頁貼上祝福即可</p>
         <details class="how2"><summary>怎麼做？</summary><p>填寫資料 › 選心意金 › 完成祈福</p></details>
       </section>`;
-    d.innerHTML = `<button class="cta" id="apply" type="button">繼續填寫祈福卡</button>`;
+    d.innerHTML = `<p class="dockhint">按下會<b>自動複製這句祝福</b>，下一頁貼上即可</p><button class="cta" id="apply" type="button">製作專屬祈福卡</button>`;
     $('#apply').onclick = apply;
     prefetchApply(t.apply);
     $('#back2').onclick = () => { if (me) { leave(me, 0); me = null; } S.step = 'home'; S.sent = false; S.phrase = null; S.wall = null; render(); window.scrollTo({ top:0, behavior:'smooth' }); };
@@ -548,7 +550,7 @@ function send(){
 }
 function toCard(){ S.step = 'card'; render(); window.scrollTo({ top:0, behavior:'smooth' }); }
 async function apply(){
-  const btn = $('#apply'); btn.disabled = true; btn.textContent = '前往填寫頁…';
+  const btn = $('#apply'); btn.disabled = true; btn.textContent = '已複製祝福，前往中…';
   const copy = navigator.clipboard ? navigator.clipboard.writeText(S.phrase || '').catch(() => {}) : Promise.resolve();
   await Promise.race([copy, new Promise(r => setTimeout(r, 250))]); // 複製最多等 0.25 秒就出發
   location.href = S.topic.apply;
