@@ -30,8 +30,8 @@
 html{-webkit-text-size-adjust:100%}
 body{margin:0;background:#E9E2D8;color:var(--wood);font:400 16px/1.65 var(--sans)}
 button{font:inherit;color:inherit}
-.app{max-width:440px;margin:0 auto;min-height:100dvh;background:var(--paper);position:relative;padding-bottom:calc(140px + env(safe-area-inset-bottom,0px))}
-.app.nosticky{padding-bottom:24px}
+.app{max-width:440px;margin:0 auto;min-height:100dvh;background:var(--paper);position:relative;padding-bottom:calc(var(--dock-h,140px) + 28px)}
+.app.nosticky{padding-bottom:0}
 
 /* 頁首（不固定：固定頁首捲動時會蓋到直播播放器） */
 .hdr{height:48px;display:flex;align-items:center;padding:0 16px;border-bottom:1px solid var(--paper-deep)}
@@ -87,14 +87,11 @@ button{font:inherit;color:inherit}
 .scene .plaque.l{left:3%!important;text-align:left}
 .scene .plaque.r{left:auto!important;right:3%;text-align:right}
 .scene .overflow{bottom:10px;color:#FFF3DF;text-shadow:0 1px 3px rgba(0,0,0,.7)}
-.modebar{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:8px 16px;font-size:13px;color:var(--muted);border-bottom:1px solid var(--paper-deep)}
-.modebar button{border:0;background:none;color:var(--red);font-size:14.5px;font-weight:500;padding:6px 0;cursor:pointer}
+.modebar{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:44px;padding:0 16px;font-size:14px;font-weight:500;color:var(--muted);border-bottom:1px solid var(--line)}
+.modebar button{border:0;background:none;color:var(--red);font-size:15px;font-weight:600;min-height:44px;padding:0;cursor:pointer}
 .modebar button:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
 
-/* 殿前舞台（舊版，保留樣式給比較用） */
-.stage{position:relative;height:108px;overflow:hidden;background:linear-gradient(180deg,var(--wood-2) 0%,var(--wood) 45%,#6A4F3E 100%);border-top:1px solid var(--gold);transition:height .45s var(--ease)}
-.stage .line{position:absolute;left:16px;right:16px;bottom:18px;height:1px;background:rgba(201,155,84,.35)}
-.stage.slim{height:96px}
+/* 香客與祝福牌基本樣式 */
 .figure{position:absolute;bottom:10px;width:40px;height:60px;transform:translateX(-50%);transition:left 1.1s var(--ease),opacity .5s;z-index:2}
 .figure svg{width:100%;height:100%;overflow:visible;transform-origin:50% 95%;transition:transform .6s var(--ease)}
 .figure .head{transition:transform .6s var(--ease)}
@@ -138,40 +135,27 @@ button{font:inherit;color:inherit}
 .slip[aria-checked="true"] .tick{opacity:1}
 .slip:disabled{cursor:default}
 .slip:disabled:not([aria-checked="true"]){opacity:.4}
-.note{margin:14px 0 0;font-size:14px;color:var(--muted)}
 /* 朱印：快速祝福被接受後才蓋，不代表正式卡審核或牆面已播放 */
 .stamp{position:absolute;right:16px;top:50%;width:52px;height:52px;margin-top:-26px;border:2px solid #E7B9AE;color:#F7E4DE;display:grid;place-items:center;font:700 15px/1.15 var(--serif);text-align:center;opacity:0;transform:scale(1.25) rotate(-5deg);pointer-events:none}
 .stamp.on{animation:stamp .26s ease-out forwards}
 @keyframes stamp{to{opacity:1;transform:scale(1) rotate(-3deg)}}
 
-/* 狀態列 */
-.status{display:flex;align-items:center;gap:10px;font-size:15px;color:var(--muted);padding:12px 0;border-bottom:1px solid var(--paper-deep);margin-bottom:20px}
-.status i{width:8px;height:8px;border-radius:50%;background:var(--gold);flex:0 0 8px}
-.status.ok{color:#3F6B4E}
-.status.ok i{background:#3F6B4E}
-
-/* 祈福卡預覽（示意，正式卡以各廟母版為準） */
+/* 祈福卡預覽（正式卡以各廟母版為準） */
 .preview{position:relative;display:grid;grid-template-columns:30% 1fr;min-height:136px;border-radius:6px;overflow:hidden;background:var(--paper-deep)}
 .preview .side{background:var(--red);color:var(--paper);display:flex;align-items:center;justify-content:center;font:700 22px var(--serif);letter-spacing:.25em;writing-mode:vertical-rl}
 .preview .body{padding:16px;font-size:14px;color:var(--muted);line-height:1.7}
 .preview .body b{display:block;margin:2px 0 4px;font:600 18px/1.5 var(--serif);color:var(--wood)}
 .preview .flag{position:absolute;right:12px;bottom:10px;font-size:14px;font-weight:500;color:var(--muted)}
-.steps{list-style:none;margin:20px 0 0;padding:0;counter-reset:s}
-.steps li{counter-increment:s;display:flex;gap:14px;align-items:baseline;padding:10px 0;font-size:16px;border-bottom:1px solid var(--paper-deep)}
-.steps li::before{content:counter(s);font:700 18px var(--serif);color:var(--red);width:14px;flex:0 0 14px}
 
 /* 底部主按鈕列（播放器在頁首；底部留白等高，不會蓋到播放器） */
 .dock{position:fixed;left:50%;bottom:0;transform:translateX(-50%);width:100%;max-width:440px;z-index:20;padding:12px 16px calc(12px + env(safe-area-inset-bottom,0px));background:var(--paper);border-top:1px solid var(--line);text-align:center}
-.app.nosticky .dock{position:static;transform:none;border-top:0}
+.app.nosticky .dock{position:static;transform:none;margin-top:24px}
 .cta{display:flex;align-items:center;justify-content:center;width:100%;height:58px;border:0;border-radius:30px;background:#E4745E;color:#fff;font-size:18px;font-weight:700;letter-spacing:.06em;box-shadow:0 6px 16px rgba(228,116,94,.35);cursor:pointer;text-decoration:none;transition:background .15s,transform .15s var(--ease)}
 .cta:active{background:#CF5F49;transform:scale(.98)}
 .cta:disabled{background:#E8DDCE;color:#5B4A40;box-shadow:none;cursor:not-allowed}
-.cta.done{box-shadow:none}
-.cta.done{background:#3F6B4E}
-.sub{display:block;margin-top:6px;font-size:13.5px;color:var(--wood)}
 .titlebar{display:flex;align-items:center;gap:8px;margin:-8px 0 10px}
 .titlebar .h2{margin:0}
-.backtop{display:inline-flex;align-items:center;min-height:48px;margin-left:-6px;padding:0 6px;border:0;background:none;color:var(--ink-2,#5E504B);font-size:16px;cursor:pointer}
+.backtop{display:inline-flex;align-items:center;min-height:48px;margin-left:-6px;padding:0 6px;border:0;background:none;color:var(--muted);font-size:16px;cursor:pointer}
 .oneline{margin:16px 0 4px;font-size:16px;font-weight:500;color:var(--wood)}
 .how2 summary{min-height:48px;display:flex;align-items:center;font-size:16px;font-weight:500;color:var(--muted);cursor:pointer;list-style:none}
 .how2 summary::-webkit-details-marker{display:none}
@@ -184,13 +168,8 @@ button{font:inherit;color:inherit}
 .steps3 li{display:flex;align-items:center;gap:5px;white-space:nowrap}
 .steps3 li + li::before{content:"›";color:#8B8073;margin-right:8px}
 .steps3 b{display:none}
-.back{display:block;margin:18px auto 0;border:0;background:none;color:var(--muted);font-size:15px;padding:10px;cursor:pointer}
-.cta:focus-visible,.back:focus-visible,.slip:focus-visible,.tabs button:focus-visible,.more-link:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
+.cta:focus-visible,.backtop:focus-visible,.slip:focus-visible,.tabs button:focus-visible,.more-link:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
 
-/* 頁尾 */
-.foot{padding:28px 16px 8px;text-align:center;font-size:12.5px;color:var(--muted)}
-.toast{position:fixed;left:50%;bottom:calc(132px + env(safe-area-inset-bottom,0px));transform:translate(-50%,8px);z-index:40;max-width:88%;background:var(--wood);color:var(--paper);font-size:14.5px;padding:10px 16px;border-radius:8px;opacity:0;pointer-events:none;transition:opacity .3s var(--ease),transform .3s var(--ease)}
-.toast.on{opacity:1;transform:translate(-50%,0)}
 @media (prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}.stamp.on{opacity:1;transform:rotate(-3deg)}}
 </style>
 </head>
@@ -222,20 +201,15 @@ button{font:inherit;color:inherit}
 
   <main id="view"></main>
 
-  <footer class="foot">
-    <p>POC 版本：人數、統計、其他香客與牆面回報為模擬資料。</p>
-  </footer>
-
   <div class="dock" id="dock"></div>
 </div>
-<div class="toast" id="toast" role="status" aria-live="polite"></div>
 
 <script>
 /* ===== 設定 ===== */
 const CFG = {
   videoId: 'B12MobI0EGg',
   youtubeUrl: 'https://www.youtube.com/live/B12MobI0EGg',
-  photo: 'https://i.ytimg.com/vi/B12MobI0EGg/hqdefault.jpg', // 正式版換成廟方核准的正殿照片
+  photo: 'https://i.ytimg.com/vi/B12MobI0EGg/hqdefault.jpg', // 直播斷線時的備援畫面
   groupUrl: 'https://lifemap.miniapp.tw/home/group/0P2-KwZoI4KhX5lp6miq/',
   topics: [
     { id:'study', name:'學業', product:'金榜題名祈福卡', side:'金榜題名',
@@ -246,7 +220,7 @@ const CFG = {
       phrases:['願工作順心，貴人相助','願生意興隆，訂單滿滿','願升遷順利，一路長紅'] }
   ]
 };
-// 正式版的其他香客事件來自後端 venue_event；POC 在本機模擬
+// 其他香客的祝福句（之後改由後端 venue_event 提供）
 const OTHERS = ['願考試順利，金榜題名','願工作順心，貴人相助','願讀書專注，心定不慌','願生意興隆，訂單滿滿','願努力都有好結果'];
 const RECENT = [
   { w:'願女兒考試順利，考上第一志願', t:'12 分鐘前上牆' },
@@ -258,7 +232,7 @@ const RECENT = [
 const S = {
   mode:'photo', // photo：廟內照片＋香客疊加；live：YouTube 即時直播（不疊加任何東西）
   step:'home', topic:CFG.topics[0], phrase:null, sent:false, wall:null,
-  source:'live', player:'loading', force:'auto', simOthers:true,
+  source:'live', player:'loading',
   online:7, today:{ wishes:36, blessings:58 }
 };
 const $ = s => document.querySelector(s);
@@ -279,7 +253,6 @@ function sizeMedia(){
   $('#app').classList.toggle('nosticky', window.innerHeight < 560);
 }
 function uiState(){
-  if (S.force !== 'auto') return S.force;
   if (S.source === 'none') return 'none';
   if (!canEmbed()) return 'small';
   if (S.source === 'offline') return 'offline';
@@ -291,7 +264,7 @@ function uiState(){
 function renderMedia(){
   const photo = S.mode === 'photo';
   $('#scene').hidden = !photo;
-  $('#modeNote').textContent = photo ? '' : '直播畫面不疊加香客';
+  $('#modeNote').textContent = photo ? '殿前香客即時動態' : '正殿 24 小時直播';
   $('#modeBtn').textContent = photo ? '看直播 ›' : '回殿前 ›';
   if (photo) {
     $('#yt').style.visibility = 'hidden';
@@ -441,7 +414,7 @@ function renderPresence(){
   $('#presence').textContent = S.online >= 3 ? `此刻 ${S.online} 人在線參與` : '此刻，還有人正在留下祝福';
 }
 /*
-  POC 的熱鬧人流（正式版由後端 venue_event 驅動，每個角色都對應真實事件）：
+  殿前人流（之後由後端 venue_event 驅動，每個角色對應一筆真實事件）：
   - 祈福（55%）：走到空位 → 合掌 → 停留 → 離開；約一半會冒出祝福牌
   - 路過（30%）：沿著殿前地面從一側走到另一側，不停留
   - 看看就走（15%）：走進來站一下，沒有合掌就離開
@@ -465,7 +438,7 @@ function calmScene(){
   actors.filter(a => !a.mine && !a.leaving).forEach((a, i) => leave(a, 300 + i * 250));
 }
 function simulateOther(){
-  if (!S.simOthers || S.step !== 'home') return;
+  if (S.step !== 'home') return;
   const r = Math.random();
   if (r < .30) { if (!matchMedia('(prefers-reduced-motion: reduce)').matches) passBy(); return; }
   const a = addActor({});
@@ -549,7 +522,10 @@ function render(){
     prefetchApply(t.apply);
     $('#back2').onclick = () => { if (me) { leave(me, 0); me = null; } S.step = 'home'; S.sent = false; S.phrase = null; S.wall = null; render(); window.scrollTo({ top:0, behavior:'smooth' }); };
   }
+  syncDock();
 }
+// 頁面底部留白跟著按鈕列實際高度走，首頁（有三步說明）和其他頁都不會多出空白
+function syncDock(){ $('#app').style.setProperty('--dock-h', $('#dock').offsetHeight + 'px'); }
 
 /* ===== 流程 ===== */
 function startBless(){
@@ -562,7 +538,7 @@ function startBless(){
 function send(){
   if (!S.phrase || S.sent || S.sending) return;
   S.sending = true; render();
-  // 正式版：後端 accepted 後才蓋印；失敗時 S.failed = true，按鈕變「重試送出」
+  // 後端 accepted 後才蓋印；失敗時 S.failed = true，按鈕變「重試送出」
   setTimeout(() => {
     S.sending = false; S.sent = true; S.wall = 'waiting'; S.today.blessings++;
     if (!me || me.leaving) me = addActor({ mine:true });
@@ -582,12 +558,6 @@ function prefetchApply(url){
   if (document.querySelector(`link[rel=prefetch][href="${url}"]`)) return;
   const l = document.createElement('link'); l.rel = 'prefetch'; l.href = url; document.head.appendChild(l);
 }
-let toastT = null;
-function toast(msg){ const t = $('#toast'); t.textContent = msg; t.classList.add('on'); clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove('on'), 2800); }
-
-
-
-/* ===== 啟動 ===== */
 /* ===== 殿前互動／即時直播切換 ===== */
 let ytLoaded = false;
 function setMode(m){
@@ -601,7 +571,7 @@ function setMode(m){
 $('#modeBtn').onclick = () => setMode(S.mode === 'photo' ? 'live' : 'photo');
 
 sizeMedia(); renderMedia(); renderPresence(); render();
-window.addEventListener('resize', () => { sizeMedia(); renderMedia(); });
+window.addEventListener('resize', () => { sizeMedia(); renderMedia(); syncDock(); });
 // 分頁回到前景時再試一次自動播放（背景分頁會被瀏覽器擋自動播放）
 document.addEventListener('visibilitychange', () => {
   if (document.visibilityState === 'visible' && S.mode === 'live' && yt && ytReady && S.player !== 'playing') {
