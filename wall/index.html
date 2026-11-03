@@ -11,7 +11,7 @@
 /*
   牆面浮層示範：主視覺區內人工核准的安全矩形，完全不進卡牆區。
   牆面座標以 2160×3840 原圖為準；安全矩形 = 主視覺下緣的遶境地面帶（y 1530–1775），
-  不碰 QR、廟名、主標、「掃碼許新春願」、中央神轎。
+  不碰 QR、廟名、主標、「掃碼許新春願」；整條地面（含神轎前）都可以站香客。
 */
 :root{
   --red:#7A2A24; --gold:#C99B54; --paper:#F7F3EC; --paper-deep:#E8DDCE; --wood:#3E2F26; --muted:#5B4A40; --line:#DED5C9;
@@ -45,16 +45,16 @@ button{font:inherit;color:inherit}
 /* 小香客：與手機殿前同一套素材 */
 .fig{position:absolute;bottom:3%;height:92%;transform:translateX(-50%);transition-property:left,opacity;transition-timing-function:linear,ease;transition-duration:2s,.6s;filter:drop-shadow(0 .4cqw .5cqw rgba(0,0,0,.45));z-index:2}
 .fig img{display:block;height:100%;width:auto;transform-origin:50% 96%;transition:transform .5s var(--ease);user-select:none;-webkit-user-drag:none}
-.fig.walk img{animation:wobble .36s ease-in-out infinite alternate}
+.fig.walk img{animation:wobble var(--step,.45s) ease-in-out infinite alternate}
 .fig.flip{scale:-1 1}
 .fig.bow img{transform:scaleY(.94) translateY(2px) rotate(-2deg)}
 .fig.out{opacity:0}
-/* 後排：稍高、稍小、在前排後面，八個人站得下又像一群人 */
+/* 後排：稍高、稍小、在前排後面，看起來像一群人 */
 .fig.back{bottom:16%;height:78%;z-index:1;filter:drop-shadow(0 .3cqw .4cqw rgba(0,0,0,.4)) brightness(.94)}
-@keyframes wobble{from{transform:rotate(-6deg) translateY(0)}to{transform:rotate(6deg) translateY(-3px)}}
+@keyframes wobble{from{transform:rotate(calc(var(--sway,5deg) * -1)) translateY(0)}to{transform:rotate(var(--sway,5deg)) translateY(-3px)}}
 
-/* 祝福牌：左右兩組香客與中央神轎之間，留在安全矩形內，不遮神轎 */
-.plaque{position:absolute;top:50%;z-index:3;max-width:25%;padding:.9cqw 1.4cqw;background:rgba(251,245,233,.96);border:.28cqw solid var(--gold);border-radius:.6cqw;color:var(--red);font:700 2.4cqw/1.35 var(--serif);white-space:nowrap;opacity:0;transform:translateY(-40%);transition:opacity .45s var(--ease),transform .45s var(--ease)}
+/* 祝福牌：在那位香客旁邊、朝中央的一側，留在安全矩形內 */
+.plaque{position:absolute;top:50%;z-index:3;max-width:30%;padding:.9cqw 1.4cqw;background:rgba(251,245,233,.96);border:.28cqw solid var(--gold);border-radius:.6cqw;color:var(--red);font:700 2.4cqw/1.35 var(--serif);white-space:nowrap;opacity:0;transform:translateY(-40%);transition:opacity .45s var(--ease),transform .45s var(--ease)}
 .plaque.on{opacity:1;transform:translateY(-50%)}
 .plaque small{display:block;margin-top:.3cqw;font:500 1.7cqw/1.3 var(--sans);color:var(--muted)}
 .plaque.arrive{font:700 2.3cqw/1.3 var(--sans);color:var(--wood);padding:.8cqw 1.5cqw}
@@ -123,7 +123,7 @@ button{font:inherit;color:inherit}
     </div>
 
     <ul class="rules">
-      <li>只在主視覺的安全矩形內，不進卡牆、不碰 QR、主標與神轎</li>
+      <li>只在主視覺的安全矩形內，不進卡牆、不碰 QR 與主標</li>
       <li>只演真實事件，沒人掃碼時什麼都不出現</li>
       <li>每次最長 8 秒，同時最多 8 位</li>
       <li>牆上不標「你」，也不顯示地區</li>
@@ -134,16 +134,27 @@ button{font:inherit;color:inherit}
 
 <script>
 const $ = s => document.querySelector(s);
-const PEOPLE = ['grandma','grandpa','woman','man-cap','child','uncle-hat','student','office'];
-PEOPLE.forEach(f => { const i = new Image(); i.src = `../assets/people/${f}.webp`; });
+// 走路速度（每移動 1% 寬度需要的秒數）與步伐：安全矩形約等於殿前 15 公尺，
+// 一般人每秒約 1.3 公尺 ≈ 0.12 秒／1%；老人慢、年輕人快，小孩步子小但頻率快
+const PEOPLE = [
+  { file:'grandma',   pace:.19, step:'.62s', sway:'4deg' },
+  { file:'grandpa',   pace:.18, step:'.6s',  sway:'4deg' },
+  { file:'uncle-hat', pace:.13, step:'.5s',  sway:'5deg' },
+  { file:'woman',     pace:.12, step:'.46s', sway:'5deg' },
+  { file:'office',    pace:.115,step:'.44s', sway:'5deg' },
+  { file:'man-cap',   pace:.11, step:'.44s', sway:'5deg' },
+  { file:'student',   pace:.10, step:'.4s',  sway:'6deg' },
+  { file:'child',     pace:.12, step:'.3s',  sway:'7deg' }
+];
+PEOPLE.forEach(p => { const i = new Image(); i.src = `../assets/people/${p.file}.webp`; });
 // 牆上用句庫的短版（8 字內），55 吋螢幕 3–5 公尺看得清楚
 const PHRASES = ['願全家平安順遂','願考試金榜題名','願工作貴人相助','願爸媽身體健康','願生意興隆','願羊年開泰'];
-// 站位（安全矩形寬度的百分比）：中央 47–58% 是神轎，香客分站兩側，每側前排 2 位、後排 2 位
+// 站位（安全矩形寬度的百分比）：整條地面都能站，前排 6 個、後排 6 個交錯
 const SLOTS = [
-  { x:3 }, { x:11 }, { x:7, back:true }, { x:15, back:true },
-  { x:97 }, { x:89 }, { x:93, back:true }, { x:85, back:true }
+  { x:5 }, { x:22 }, { x:39 }, { x:56 }, { x:73 }, { x:90 },
+  { x:13, back:true }, { x:30, back:true }, { x:47, back:true }, { x:64, back:true }, { x:81, back:true }, { x:97, back:true }
 ];
-const MAX = 8, HOLD = 6000, WAIT = 15000, WALK = 0.05; // WALK：每移動 1% 寬度需要的秒數
+const MAX = 8, HOLD = 6000, WAIT = 15000;
 
 const S = { n: 36, off: false, auto: true };
 const actors = [];
@@ -153,7 +164,7 @@ function log(t){ $('#log').textContent = t; }
 function rnd(a){ return a[Math.floor(Math.random() * a.length)]; }
 
 function walkTo(a, x, done){
-  const from = parseFloat(a.el.style.left) || 0, dur = Math.max(.8, Math.abs(x - from) * WALK);
+  const from = parseFloat(a.el.style.left) || 0, dur = Math.max(1.2, Math.abs(x - from) * a.p.pace);
   a.el.classList.add('walk');
   a.el.classList.toggle('flip', x < from);
   a.el.style.transitionDuration = dur + 's, .6s';
@@ -170,12 +181,13 @@ function enter(){
   if (S.off) return null;
   if (actors.filter(a => !a.leaving).length >= MAX) return null;
   const slot = freeSlot(); if (slot < 0) return null;
-  const x = SLOTS[slot].x, el = document.createElement('div');
+  const x = SLOTS[slot].x, p = rnd(PEOPLE), el = document.createElement('div');
   el.className = 'fig' + (SLOTS[slot].back ? ' back' : '');
-  el.innerHTML = `<img src="../assets/people/${rnd(PEOPLE)}.webp" alt="" draggable="false">`;
-  el.style.left = x < 50 ? '-8%' : '108%';
+  el.innerHTML = `<img src="../assets/people/${p.file}.webp" alt="" draggable="false">`;
+  el.style.setProperty('--step', p.step); el.style.setProperty('--sway', p.sway);
+  el.style.left = x < 50 ? '-8%' : '108%'; // 從比較近的一側走進來
   $('#safe').appendChild(el);
-  const a = { el, slot, x, leaving:false, state:'arrive' };
+  const a = { el, p, slot, x, leaving:false, state:'arrive' };
   actors.push(a);
   requestAnimationFrame(() => requestAnimationFrame(() => walkTo(a, x, () => { a.arrived = true; a.onArrive && a.onArrive(); })));
   // 開頁 15 秒內沒送出就離開，不做祈福動作
@@ -194,8 +206,8 @@ function plaque(a, html, cls){
   const p = document.createElement('div');
   p.className = 'plaque' + (cls ? ' ' + cls : '');
   p.innerHTML = html;
-  // 左側香客的牌子在 20–45%，右側的在 59–81%，都不碰中央神轎
-  if (a.x < 50) p.style.left = '20%'; else p.style.right = '19%';
+  // 牌子放在香客朝中央的一側，緊貼著他
+  if (a.x < 50) p.style.left = (a.x + 3.5) + '%'; else p.style.right = (100 - a.x + 3.5) + '%';
   $('#safe').appendChild(p);
   requestAnimationFrame(() => p.classList.add('on'));
   a.plaque = p;
