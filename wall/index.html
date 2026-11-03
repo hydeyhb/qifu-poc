@@ -49,10 +49,12 @@ button{font:inherit;color:inherit}
 .fig.flip{scale:-1 1}
 .fig.bow img{transform:scaleY(.94) translateY(2px) rotate(-2deg)}
 .fig.out{opacity:0}
+/* 後排：稍高、稍小、在前排後面，八個人站得下又像一群人 */
+.fig.back{bottom:16%;height:78%;z-index:1;filter:drop-shadow(0 .3cqw .4cqw rgba(0,0,0,.4)) brightness(.94)}
 @keyframes wobble{from{transform:rotate(-6deg) translateY(0)}to{transform:rotate(6deg) translateY(-3px)}}
 
 /* 祝福牌：左右兩組香客與中央神轎之間，留在安全矩形內，不遮神轎 */
-.plaque{position:absolute;top:50%;z-index:3;max-width:26%;padding:1cqw 1.6cqw;background:rgba(251,245,233,.96);border:.28cqw solid var(--gold);border-radius:.6cqw;color:var(--red);font:700 2.6cqw/1.35 var(--serif);white-space:nowrap;opacity:0;transform:translateY(-40%);transition:opacity .45s var(--ease),transform .45s var(--ease)}
+.plaque{position:absolute;top:50%;z-index:3;max-width:25%;padding:.9cqw 1.4cqw;background:rgba(251,245,233,.96);border:.28cqw solid var(--gold);border-radius:.6cqw;color:var(--red);font:700 2.4cqw/1.35 var(--serif);white-space:nowrap;opacity:0;transform:translateY(-40%);transition:opacity .45s var(--ease),transform .45s var(--ease)}
 .plaque.on{opacity:1;transform:translateY(-50%)}
 .plaque small{display:block;margin-top:.3cqw;font:500 1.7cqw/1.3 var(--sans);color:var(--muted)}
 .plaque.arrive{font:700 2.3cqw/1.3 var(--sans);color:var(--wood);padding:.8cqw 1.5cqw}
@@ -111,7 +113,7 @@ button{font:inherit;color:inherit}
       <button class="btn primary" id="bAuto" type="button"><b>自動示範：開</b><span>依序播放入場、送祝福、多人合併</span></button>
       <button class="btn" id="bOpen" type="button"><b>有人掃碼開頁</b><span>小香客走進殿前，站著等</span></button>
       <button class="btn" id="bSend" type="button"><b>有人送出祝福</b><span>合掌低頭，出現那句祝福，約 6 秒後離開</span></button>
-      <button class="btn" id="bBurst" type="button"><b>同時很多人送祝福</b><span>最多 3 位，其餘合併成「另有 N 份」</span></button>
+      <button class="btn" id="bBurst" type="button"><b>同時很多人送祝福</b><span>最多 8 位，其餘合併成「另有 N 份」</span></button>
     </div>
 
     <div class="switches">
@@ -123,7 +125,7 @@ button{font:inherit;color:inherit}
     <ul class="rules">
       <li>只在主視覺的安全矩形內，不進卡牆、不碰 QR、主標與神轎</li>
       <li>只演真實事件，沒人掃碼時什麼都不出現</li>
-      <li>每次最長 8 秒，同時最多 3 位</li>
+      <li>每次最長 8 秒，同時最多 8 位</li>
       <li>牆上不標「你」，也不顯示地區</li>
     </ul>
     <p class="log" id="log" role="status" aria-live="polite"></p>
@@ -136,9 +138,12 @@ const PEOPLE = ['grandma','grandpa','woman','man-cap','child','uncle-hat','stude
 PEOPLE.forEach(f => { const i = new Image(); i.src = `../assets/people/${f}.webp`; });
 // 牆上用句庫的短版（8 字內），55 吋螢幕 3–5 公尺看得清楚
 const PHRASES = ['願全家平安順遂','願考試金榜題名','願工作貴人相助','願爸媽身體健康','願生意興隆','願羊年開泰'];
-// 站位（安全矩形寬度的百分比）：中央 46–60% 是神轎，香客分站兩側
-const SLOTS = [5, 14, 96, 87];
-const MAX = 3, HOLD = 6000, WAIT = 15000, WALK = 0.05; // WALK：每移動 1% 寬度需要的秒數
+// 站位（安全矩形寬度的百分比）：中央 47–58% 是神轎，香客分站兩側，每側前排 2 位、後排 2 位
+const SLOTS = [
+  { x:3 }, { x:11 }, { x:7, back:true }, { x:15, back:true },
+  { x:97 }, { x:89 }, { x:93, back:true }, { x:85, back:true }
+];
+const MAX = 8, HOLD = 6000, WAIT = 15000, WALK = 0.05; // WALK：每移動 1% 寬度需要的秒數
 
 const S = { n: 36, off: false, auto: true };
 const actors = [];
@@ -165,8 +170,8 @@ function enter(){
   if (S.off) return null;
   if (actors.filter(a => !a.leaving).length >= MAX) return null;
   const slot = freeSlot(); if (slot < 0) return null;
-  const x = SLOTS[slot], el = document.createElement('div');
-  el.className = 'fig';
+  const x = SLOTS[slot].x, el = document.createElement('div');
+  el.className = 'fig' + (SLOTS[slot].back ? ' back' : '');
   el.innerHTML = `<img src="../assets/people/${rnd(PEOPLE)}.webp" alt="" draggable="false">`;
   el.style.left = x < 50 ? '-8%' : '108%';
   $('#safe').appendChild(el);
@@ -189,8 +194,8 @@ function plaque(a, html, cls){
   const p = document.createElement('div');
   p.className = 'plaque' + (cls ? ' ' + cls : '');
   p.innerHTML = html;
-  // 左側香客的牌子在 19–45%，右側的在 60–84%，都不碰中央神轎
-  if (a.x < 50) p.style.left = '19%'; else p.style.right = '16%';
+  // 左側香客的牌子在 20–45%，右側的在 59–81%，都不碰中央神轎
+  if (a.x < 50) p.style.left = '20%'; else p.style.right = '19%';
   $('#safe').appendChild(p);
   requestAnimationFrame(() => p.classList.add('on'));
   a.plaque = p;
@@ -202,7 +207,7 @@ function hidePlaque(p){ p.classList.remove('on'); setTimeout(() => p.remove(), 4
 function open(){
   if (S.off) { log('浮層已停用，牆面維持原畫面'); return null; }
   const a = enter();
-  if (!a) { log('殿前已有 3 位，這次不另外入場'); return null; }
+  if (!a) { log('殿前已有 8 位，這次不另外入場'); return null; }
   a.onArrive = () => { if (a.state === 'arrive') { plaque(a, '有人來到殿前', 'arrive'); setTimeout(() => a.plaque && a.state === 'arrive' && hidePlaque(a.plaque), 2600); } };
   log('W1｜有人掃碼開頁：小香客走進殿前');
   return a;
@@ -229,11 +234,11 @@ function bumpExtra(){
   extra++; S.n++;
   const sm = document.querySelector('.plaque.on small'); if (sm) sm.textContent = countLine();
   clearTimeout(extraT); extraT = setTimeout(() => { extra = 0; }, 8000);
-  log('W4｜超過 3 位：其餘合併成「另有 N 份」');
+  log('W4｜超過 8 位：其餘合併成「另有 N 份」');
 }
 function burst(){
   if (S.off) { log('浮層已停用，牆面維持原畫面'); return; }
-  for (let i = 0; i < 6; i++) setTimeout(send, i * 450);
+  for (let i = 0; i < 11; i++) setTimeout(send, i * 380); // 8 位上場，另外 3 份合併
 }
 function clearAll(){
   actors.forEach(a => { a.leaving = true; clearTimeout(a.waitT); clearTimeout(a.holdT); clearTimeout(a.walkT); a.el.remove(); });
