@@ -235,23 +235,32 @@ const WALL_CARDS = [
   { id:'c01', type:'金榜題名卡', name:'林雅婷', w:'願女兒考試順利，考上第一志願' },
   { id:'c02', type:'業績長紅卡', name:'陳建宏', w:'願今年業績長紅，客戶都順利成交' },
   { id:'c03', type:'金榜題名卡', name:'張書豪', w:'願學測考出好成績，不辜負爸媽' },
-  { id:'c04', type:'業績長紅卡', name:'王美',   w:'願麵包店生意興隆，員工平安' },
+  { id:'c04', type:'業績長紅卡', name:'麵包店老闆娘', w:'願麵包店生意興隆，員工平安' },
   { id:'c05', type:'金榜題名卡', anon:true,     w:'願國考一次上榜，家人安心' },
   { id:'c06', type:'業績長紅卡', name:'歐陽志明', w:'願新工作順利，早日存到頭期款' },
-  { id:'c07', type:'金榜題名卡', name:'黃柏翰', w:'願兒子研究所順利畢業' },
+  { id:'c07', type:'金榜題名卡', name:'想念兒子的媽媽', w:'願兒子研究所順利畢業' },
   { id:'c08', type:'業績長紅卡', name:'Amy',    w:'願公司訂單滿滿，貴人相助' },
   { id:'c09', type:'金榜題名卡', name:'李佳穎', w:'願證照考試全部通過' },
   { id:'c10', type:'業績長紅卡', name:'吳振宇', w:'願升遷順利，一路長紅' },
-  { id:'c11', type:'金榜題名卡', name:'蔡宜蓁', w:'願孫子會考順利，讀書專注' },
+  { id:'c11', type:'金榜題名卡', name:'小雅',   w:'願孫子會考順利，讀書專注' },
   { id:'c12', type:'業績長紅卡', name:'劉俊傑', w:'願開店順利，客人吃得歡喜' }
 ];
 const HOME_CARDS = 3; // 首頁先列 3 張，其餘按「查看全部」在同一頁展開
-// 姓名隱碼：2 字 陳○、3 字 王○明、4 字以上留頭尾、英文只留首字母、選匿名＝匿名祈福人
+// 祈福人：暱稱照牆上原樣顯示；只有真名才隱碼（2 字 陳○、3 字 王○明、4 字留頭尾、英文只留首字母）；選匿名＝匿名祈福人
+// 正式版請以表單或後端的 name_kind（real／nickname）判斷；沒有欄位時才用下面的規則推測，推測不出來一律當真名隱碼
+const SURNAMES = '陳林黃張李王吳劉蔡楊許鄭謝洪郭邱曾廖賴徐周葉蘇莊呂江何蕭羅高潘簡朱鍾游彭詹胡施沈余盧梁趙顏柯翁魏孫戴范方宋鄧杜傅侯曹薛丁卓阮馬董温唐藍石蔣古紀姚連馮歐程湯黃田康姜白汪鄒尤巫鐘黎涂龔嚴韓袁金童陸夏柳凃邵錢伍倪溫于譚駱熊任甘秦顧毛章史官萬俞雷粘饒張闕凌崔尹孔辛武辜陶段龍韋葛池孟褚殷麥賀賈莫文管關向包丘梅華利裴樊房全佘左花';
+const SURNAMES2 = ['歐陽','司馬','諸葛','上官','司徒','張簡','范姜','東方','皇甫','夏侯'];
+function isRealName(s){
+  if (/^[A-Za-z][a-z]+(\s[A-Za-z][a-z]+)?$/.test(s)) return true; // 英文名一律當真名
+  if (!/^[一-鿿]{2,4}$/.test(s)) return false;           // 有地名、稱謂、句子 → 暱稱
+  if (SURNAMES2.some(x => s.startsWith(x))) return s.length >= 3;
+  return SURNAMES.includes(s[0]) && s.length <= 3 && !/[媽爸嬤公婆哥姐姊弟妹叔姨仔娘伯]/.test(s.slice(1));
+}
 function maskName(c){
   if (c.anon || !c.name) return '匿名祈福人';
-  const n = [...c.name.trim()];
+  const s = c.name.trim(), n = [...s];
+  if (!isRealName(s)) return s;
   if (/^[A-Za-z]/.test(n[0])) return n[0].toUpperCase() + '••';
-  if (n.length <= 1) return n[0] + '○';
   if (n.length === 2) return n[0] + '○';
   return n[0] + '○'.repeat(n.length - 2) + n[n.length - 1];
 }
