@@ -59,6 +59,14 @@ button{font:inherit;color:inherit}
 .plaque small{display:block;margin-top:.3cqw;font:500 1.7cqw/1.3 var(--sans);color:var(--muted)}
 .plaque.arrive{font:700 2.3cqw/1.3 var(--sans);color:var(--wood);padding:.8cqw 1.5cqw}
 
+/* 集氣：只在被集氣的那張卡自己身上，「+1 集氣」放在左側插畫區下方，不蓋姓名與心願 */
+.card{position:absolute;width:32%;height:12%;border-radius:.6cqw;cursor:pointer}
+.card::after{content:"";position:absolute;inset:-.3cqw;border:.45cqw solid #FFD66B;border-radius:.9cqw;box-shadow:0 0 2.4cqw rgba(255,214,107,.75);opacity:0;transition:opacity .2s}
+.card.lit::after{opacity:1;transition-duration:.2s}
+.cheer1{position:absolute;left:17.5%;bottom:9%;translate:-50% 0;padding:.6cqw 1.6cqw;border:.3cqw solid #FFD66B;border-radius:99px;background:var(--red);color:#FFF6E2;font:700 2.6cqw/1.2 var(--sans);white-space:nowrap;box-shadow:0 .5cqw 1.2cqw rgba(0,0,0,.35);opacity:0;transform:translateY(30%) scale(.8)}
+.cheer1.on{animation:cheer 1.5s var(--ease) forwards}
+@keyframes cheer{13%{opacity:1;transform:translateY(0) scale(1.08)}25%{transform:none}80%{opacity:1;transform:none}100%{opacity:0;transform:translateY(-20%)}}
+
 /* 示範控制台（不在牆上） */
 .panel{width:320px;flex:none}
 .panel h1{margin:0 0 4px;font:700 22px/1.35 var(--serif);color:var(--paper)}
@@ -101,6 +109,7 @@ button{font:inherit;color:inherit}
         <div class="safe" id="safe">
           <span class="tag">安全矩形（人工核准）</span>
         </div>
+        <div id="cards"></div>
       </div>
     </div>
   </div>
@@ -114,6 +123,8 @@ button{font:inherit;color:inherit}
       <button class="btn" id="bOpen" type="button"><b>有人掃碼開頁</b><span>小香客走進殿前，站著等</span></button>
       <button class="btn" id="bSend" type="button"><b>有人送出祝福</b><span>合掌低頭，出現那句祝福，約 6 秒後離開</span></button>
       <button class="btn" id="bBurst" type="button"><b>同時很多人送祝福</b><span>最多 8 位，其餘合併成「另有 N 份」</span></button>
+      <button class="btn" id="bCheer" type="button"><b>有人為上牆心願集氣</b><span>那張卡亮起「+1 集氣」約 1.5 秒；也可以直接點牆上的卡</span></button>
+      <button class="btn" id="bCheerMany" type="button"><b>同一張卡連續被集氣</b><span>10 秒內只演一次，期間的集氣結束後合併成「+N」</span></button>
     </div>
 
     <div class="switches">
@@ -127,6 +138,7 @@ button{font:inherit;color:inherit}
       <li>只演真實事件，沒人掃碼時什麼都不出現</li>
       <li>每次最長 8 秒，同時最多 8 位</li>
       <li>牆上不標「你」，也不顯示地區</li>
+      <li>集氣只在那張卡自己身上短暫出現，不常駐數字、不排行</li>
     </ul>
     <p class="log" id="log" role="status" aria-live="polite"></p>
   </aside>
@@ -259,12 +271,49 @@ function clearAll(){
   extra = 0;
 }
 
-/* 自動示範：開頁 → 送祝福 → 有人開頁沒送就走 → 多人合併 → 安靜一段時間 */
+/* 集氣：手機對「此刻在這面牆上」的付費卡集氣，後端確認後牆面那張卡亮起 +1 */
+// 12 張卡在牆上的位置（整面牆的百分比，3 欄 × 4 列）
+const CARDS = [];
+[47.0, 60.4, 73.8, 87.25].forEach(top => [0.71, 34.04, 67.29].forEach(left => CARDS.push({ top, left })));
+const COOL = 10000;
+CARDS.forEach((c, i) => {
+  const el = document.createElement('div');
+  el.className = 'card'; el.style.top = c.top + '%'; el.style.left = c.left + '%';
+  el.innerHTML = '<span class="cheer1"></span>';
+  el.onclick = () => { setAuto(false); cheer(i); };
+  $('#cards').appendChild(el);
+  Object.assign(c, { el, until:0, pending:0, t:null });
+});
+function playCheer(c, n){
+  const b = c.el.querySelector('.cheer1');
+  b.textContent = `+${n} 集氣`;
+  b.classList.remove('on'); void b.offsetWidth; b.classList.add('on');
+  c.el.classList.add('lit'); setTimeout(() => c.el.classList.remove('lit'), 1500);
+  c.until = Date.now() + COOL;
+  // 冷卻結束時，把期間累積的集氣合併演一次
+  clearTimeout(c.t);
+  c.t = setTimeout(() => { if (c.pending) { const k = c.pending; c.pending = 0; playCheer(c, k); } }, COOL);
+}
+function cheer(i){
+  if (S.off) { log('浮層已停用，牆面維持原畫面'); return; }
+  const c = CARDS[i ?? Math.floor(Math.random() * CARDS.length)];
+  if (Date.now() < c.until) { c.pending++; log(`集氣｜這張卡冷卻中，先累積 ${c.pending} 份，10 秒到再合併顯示`); return; }
+  playCheer(c, 1);
+  log('集氣｜後端確認成功：那張卡亮起「+1 集氣」');
+}
+function cheerMany(){
+  const i = Math.floor(Math.random() * CARDS.length);
+  for (let k = 0; k < 4; k++) setTimeout(() => cheer(i), k * 700);
+}
+
+/* 自動示範：開頁 → 送祝福 → 有人開頁沒送就走 → 集氣 → 多人合併 → 安靜一段時間 */
 const SCRIPT = [
   [1500, open], [3800, send],
   [9000, open], [2500, send], [1200, open],
   [8000, send],
-  [9000, burst],
+  [4000, () => cheer()], [3500, () => cheer()],
+  [5000, burst],
+  [12000, cheerMany],
   [14000, () => log('沒有事件時，牆面就是原本的主視覺')]
 ];
 let autoT = null, step = 0;
@@ -282,7 +331,9 @@ function setAuto(on){
 }
 
 $('#bAuto').onclick = () => setAuto(!S.auto);
-['#bOpen','#bSend','#bBurst'].forEach(id => $(id).addEventListener('click', () => setAuto(false)));
+['#bOpen','#bSend','#bBurst','#bCheer','#bCheerMany'].forEach(id => $(id).addEventListener('click', () => setAuto(false)));
+$('#bCheer').addEventListener('click', () => cheer());
+$('#bCheerMany').addEventListener('click', cheerMany);
 $('#bOpen').addEventListener('click', open);
 $('#bSend').addEventListener('click', send);
 $('#bBurst').addEventListener('click', burst);

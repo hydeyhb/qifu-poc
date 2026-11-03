@@ -114,7 +114,24 @@ button{font:inherit;color:inherit}
 .ticker::-webkit-scrollbar{display:none}
 .wish{flex:0 0 82%;scroll-snap-align:start;background:#ECE6DD;border-left:3px solid var(--red);border-radius:6px;padding:14px 16px}
 .wish p{margin:0;font:600 17px/1.5 var(--serif)}
-.wish span{display:block;margin-top:6px;font-size:14px;font-weight:500;color:var(--muted)}
+.wish{display:flex;flex-direction:column;gap:8px}
+.wmeta{display:flex;align-items:center;gap:8px;font-size:14px;font-weight:500;color:var(--muted)}
+.wtype{padding:1px 8px;border:1px solid #D9B9AE;border-radius:4px;color:var(--red);font-weight:700;background:#F7EDE8}
+.wish p{flex:1}
+/* 集氣：次要按鈕，不跟底部主按鈕搶 */
+.wfoot{display:flex;align-items:center;flex-wrap:wrap;gap:4px 10px}
+.cheer{min-height:44px;padding:0 16px;border:1.5px solid var(--red);border-radius:22px;background:var(--paper);color:var(--red);font-size:15px;font-weight:700;cursor:pointer;transition:background .15s,transform .15s var(--ease)}
+.cheer:active{transform:scale(.97)}
+.cheer.busy{opacity:.6;cursor:default}
+.cheer.done{border-color:var(--gold);background:#F3E6CF;color:var(--wood);cursor:default;animation:pop .35s var(--ease)}
+.cheer.fail{border-style:dashed}
+@keyframes pop{40%{transform:scale(1.08)}}
+.look{font-size:14px;font-weight:500;color:var(--red)}
+/* 查看全部：在同一頁改成直排 */
+.ticker.all{flex-direction:column;overflow:visible;margin:0;padding:0}
+.ticker.all .wish{flex:none}
+.allbtn{display:block;width:100%;min-height:48px;margin-top:8px;border:0;background:none;color:var(--wood);font-size:15px;font-weight:700;text-decoration:underline;text-underline-offset:4px;cursor:pointer}
+.cheer:focus-visible,.allbtn:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
 .today{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:20px;padding:16px 0;border-top:1px solid var(--line)}
 .today div + div{border-left:1px solid var(--line);padding-left:16px}
 .today strong{display:block;font-size:28px;font-weight:700;color:var(--red);font-variant-numeric:tabular-nums;line-height:1.15;margin-bottom:2px}
@@ -213,18 +230,42 @@ const CFG = {
 };
 // 其他香客的祝福句（之後改由後端 venue_event 提供）
 const OTHERS = ['願考試順利，金榜題名','願工作順心，貴人相助','願讀書專注，心定不慌','願生意興隆，訂單滿滿','願努力都有好結果'];
-const RECENT = [
-  { w:'願女兒考試順利，考上第一志願', t:'12 分鐘前上牆' },
-  { w:'願今年業績長紅，客戶都順利成交', t:'40 分鐘前上牆' },
-  { w:'願全家平安，阿嬤身體健康', t:'1 小時前上牆' }
+// 此刻在這面牆上輪播的付費祈福卡（已付費、審核通過；之後改由後端 wall_cards 提供，順序＝牆面輪播順序）
+const WALL_CARDS = [
+  { id:'c01', type:'金榜題名卡', name:'林雅婷', w:'願女兒考試順利，考上第一志願' },
+  { id:'c02', type:'業績長紅卡', name:'陳建宏', w:'願今年業績長紅，客戶都順利成交' },
+  { id:'c03', type:'金榜題名卡', name:'張書豪', w:'願學測考出好成績，不辜負爸媽' },
+  { id:'c04', type:'業績長紅卡', name:'王美',   w:'願麵包店生意興隆，員工平安' },
+  { id:'c05', type:'金榜題名卡', anon:true,     w:'願國考一次上榜，家人安心' },
+  { id:'c06', type:'業績長紅卡', name:'歐陽志明', w:'願新工作順利，早日存到頭期款' },
+  { id:'c07', type:'金榜題名卡', name:'黃柏翰', w:'願兒子研究所順利畢業' },
+  { id:'c08', type:'業績長紅卡', name:'Amy',    w:'願公司訂單滿滿，貴人相助' },
+  { id:'c09', type:'金榜題名卡', name:'李佳穎', w:'願證照考試全部通過' },
+  { id:'c10', type:'業績長紅卡', name:'吳振宇', w:'願升遷順利，一路長紅' },
+  { id:'c11', type:'金榜題名卡', name:'蔡宜蓁', w:'願孫子會考順利，讀書專注' },
+  { id:'c12', type:'業績長紅卡', name:'劉俊傑', w:'願開店順利，客人吃得歡喜' }
 ];
+const HOME_CARDS = 3; // 首頁先列 3 張，其餘按「查看全部」在同一頁展開
+// 姓名隱碼：2 字 陳○、3 字 王○明、4 字以上留頭尾、英文只留首字母、選匿名＝匿名祈福人
+function maskName(c){
+  if (c.anon || !c.name) return '匿名祈福人';
+  const n = [...c.name.trim()];
+  if (/^[A-Za-z]/.test(n[0])) return n[0].toUpperCase() + '••';
+  if (n.length <= 1) return n[0] + '○';
+  if (n.length === 2) return n[0] + '○';
+  return n[0] + '○'.repeat(n.length - 2) + n[n.length - 1];
+}
+// 集氣去重：正式版由後端以匿名 ID＋登入 ID 去重，這裡用本機記錄模擬「重開網頁也算數」
+const cheered = (() => { try { return new Set(JSON.parse(localStorage.getItem('qifu-cheered') || '[]')); } catch(e){ return new Set(); } })();
+function saveCheered(){ try { localStorage.setItem('qifu-cheered', JSON.stringify([...cheered])); } catch(e){} }
 
 /* ===== 狀態 ===== */
 const S = {
   mode:'photo', // photo：廟內照片＋香客疊加；live：YouTube 即時直播（不疊加任何東西）
   step:'home', topic:CFG.topics[0], phrase:null, sent:false, wall:null,
   source:'live', player:'loading',
-  online:7, today:{ wishes:36, blessings:58 }
+  online:7, today:{ wishes:36, blessings:58 },
+  cheer:{}, justCheered:null, allCards:false
 };
 const $ = s => document.querySelector(s);
 const esc = s => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
@@ -458,18 +499,22 @@ function render(){
   if (S.step === 'home') {
     v.innerHTML = `
       <section class="sec">
-        <h2 class="h2">大家剛留下的心願</h2>
-        <div class="ticker">
-          ${RECENT.map(r => `<article class="wish"><p>${esc(r.w)}</p><span>${esc(r.t)}・已通過審核</span></article>`).join('')}
+        <h2 class="h2">為上牆心願集氣</h2>
+        <p class="lead">點一下集氣，心意會傳到祈福牆</p>
+        <div class="ticker${S.allCards ? ' all' : ''}" id="cards">
+          ${(S.allCards ? WALL_CARDS : WALL_CARDS.slice(0, HOME_CARDS)).map(wishCard).join('')}
         </div>
+        <button class="allbtn" id="allBtn" type="button">${S.allCards ? '收合' : `查看全部 ${WALL_CARDS.length} 張上牆心願`}</button>
         <div class="today" aria-label="今天這間廟">
           <div><strong>${S.today.wishes}</strong><span>今天的祈福卡</span></div>
           <div><strong id="nBless">${S.today.blessings}</strong><span>今天的祝福</span></div>
         </div>
-        <a class="more-link" href="${CFG.groupUrl}" target="_blank" rel="noopener"><span>直接寫祈福卡</span><span aria-hidden="true">›</span></a>
+        <a class="more-link" href="${CFG.groupUrl}" target="_blank" rel="noopener"><span>我也要留下上牆祈福卡</span><span aria-hidden="true">›</span></a>
       </section>`;
     d.innerHTML = `<ol class="steps3" aria-label="怎麼送祝福"><li><b>1</b>選一句</li><li><b>2</b>送出</li><li><b>3</b>小人進殿合掌</li></ol><button class="cta" id="go" type="button">免費送一句祝福</button>`;
     $('#go').onclick = startBless;
+    $('#cards').onclick = e => { const b = e.target.closest('.cheer'); if (b) cheer(b.dataset.id); };
+    $('#allBtn').onclick = () => { S.allCards = !S.allCards; render(); if (!S.allCards) $('#cards').scrollIntoView({ block:'nearest' }); };
   }
 
   if (S.step === 'bless') {
@@ -504,6 +549,35 @@ function render(){
 }
 // 頁面底部留白跟著按鈕列實際高度走，首頁（有三步說明）和其他頁都不會多出空白
 function syncDock(){ $('#app').style.setProperty('--dock-h', $('#dock').offsetHeight + 'px'); }
+
+/* ===== 為上牆心願集氣 ===== */
+// 卡片只放卡種、隱碼姓名、心願；不顯示集氣累計數，避免變成人氣比賽
+function wishCard(c){
+  const st = cheered.has(c.id) ? 'done' : (S.cheer[c.id] || 'idle');
+  const label = { idle:'為他集氣', busy:'集氣中…', done:'你已集氣', fail:'未成功，請再試一次' }[st];
+  return `<article class="wish" data-id="${c.id}">
+    <div class="wmeta"><span class="wtype">${esc(c.type)}</span><span>${esc(maskName(c))}</span></div>
+    <p>${esc(c.w)}</p>
+    <div class="wfoot">
+      <button class="cheer ${st}" type="button" data-id="${c.id}" ${st === 'busy' || st === 'done' ? 'disabled' : ''} aria-live="polite">${label}</button>
+      ${st === 'done' && S.justCheered === c.id ? '<span class="look">抬頭看牆，這張卡會亮起 +1</span>' : ''}
+    </div>
+  </article>`;
+}
+// 只更新那一張卡，不重畫整頁，橫滑位置不會跳掉
+function paintCard(id){
+  const old = document.querySelector(`.wish[data-id="${id}"]`); if (!old) return;
+  const t = document.createElement('div'); t.innerHTML = wishCard(WALL_CARDS.find(c => c.id === id)).trim();
+  old.replaceWith(t.firstChild);
+}
+function cheer(id){
+  if (cheered.has(id) || S.cheer[id] === 'busy') return;
+  S.cheer[id] = 'busy'; paintCard(id);
+  // 後端寫入成功才算數，也才通知牆面播「+1 集氣」；失敗時按鈕恢復可再按
+  setTimeout(() => {
+    cheered.add(id); saveCheered(); S.cheer[id] = 'done'; S.justCheered = id; paintCard(id);
+  }, 500);
+}
 
 /* ===== 流程 ===== */
 function startBless(){
