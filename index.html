@@ -140,12 +140,6 @@ button{font:inherit;color:inherit}
 .stamp.on{animation:stamp .26s ease-out forwards}
 @keyframes stamp{to{opacity:1;transform:scale(1) rotate(-3deg)}}
 
-/* 祈福卡預覽（正式卡以各廟母版為準） */
-.preview{position:relative;display:grid;grid-template-columns:30% 1fr;min-height:136px;border-radius:6px;overflow:hidden;background:var(--paper-deep)}
-.preview .side{background:var(--red);color:var(--paper);display:flex;align-items:center;justify-content:center;font:700 22px var(--serif);letter-spacing:.25em;writing-mode:vertical-rl}
-.preview .body{padding:16px;font-size:14px;color:var(--muted);line-height:1.7}
-.preview .body b{display:block;margin:2px 0 4px;font:600 18px/1.5 var(--serif);color:var(--wood)}
-.preview .flag{position:absolute;right:12px;bottom:10px;font-size:14px;font-weight:500;color:var(--muted)}
 
 /* 底部主按鈕列（播放器在頁首；底部留白等高，不會蓋到播放器） */
 .dock{position:fixed;left:50%;bottom:0;transform:translateX(-50%);width:100%;max-width:440px;z-index:20;padding:12px 16px calc(12px + env(safe-area-inset-bottom,0px));background:var(--paper);border-top:1px solid var(--line);text-align:center}
@@ -156,15 +150,9 @@ button{font:inherit;color:inherit}
 .titlebar{display:flex;align-items:center;gap:8px;margin:-8px 0 10px}
 .titlebar .h2{margin:0}
 .backtop{display:inline-flex;align-items:center;min-height:48px;margin-left:-6px;padding:0 6px;border:0;background:none;color:var(--muted);font-size:16px;cursor:pointer}
-/* 寫卡頁主按鈕上方的說明：讓人知道按下去會複製祝福 */
+/* 送出後主按鈕上方的說明：讓人知道按下去會複製祝福 */
 .dockhint{margin:0 0 10px;font-size:14px;font-weight:500;color:var(--muted)}
 .dockhint b{color:var(--wood);font-weight:700}
-.how2{margin-top:12px}
-.how2 summary{min-height:48px;display:flex;align-items:center;font-size:16px;font-weight:500;color:var(--muted);cursor:pointer;list-style:none}
-.how2 summary::-webkit-details-marker{display:none}
-.how2 summary::after{content:"›";margin-left:8px;font-size:18px;transition:transform .2s}
-.how2[open] summary::after{transform:rotate(90deg)}
-.how2 p{margin:0 0 8px;font-size:15px;line-height:1.6}
 .stamp.still{animation:none;opacity:1;transform:rotate(-3deg)}
 /* 首頁三步說明：讓第一次來的人知道按下去會發生什麼 */
 .steps3{display:flex;justify-content:center;align-items:center;flex-wrap:wrap;gap:2px 8px;min-height:28px;margin:0 0 10px;padding:0;list-style:none;font-size:14px;font-weight:500;color:var(--muted)}
@@ -246,11 +234,11 @@ let yt = null, ytReady = false, stallT = null;
 function canEmbed(){ return $('#media').clientWidth >= 300 && window.innerHeight >= 560; }
 function sizeMedia(){
   document.querySelector('.modebar').hidden = S.step !== 'home';
-  document.querySelector('.venue').hidden = S.step !== 'home'; // 選句、寫卡時不重複顯示廟名，把空間留給籤條
+  document.querySelector('.venue').hidden = S.step !== 'home'; // 選句時不重複顯示廟名，把空間留給籤條
   const w = $('#media').clientWidth;
-  const crop = S.step !== 'home' && S.mode === 'photo'; // 選句頁與寫卡頁只留殿前地面一條，讓籤條和卡片一進頁就看得到
+  const crop = S.step !== 'home' && S.mode === 'photo'; // 選句頁只留殿前地面一條，讓籤條一進頁就看得到
   $('#media').classList.toggle('crop', crop);
-  $('#media').style.height = crop ? (S.step === 'bless' ? '150px' : '160px')
+  $('#media').style.height = crop ? (S.sent ? '128px' : '150px') // 送出後按鈕上方多一行說明，照片再縮一點讓籤條不被蓋到
     : S.mode === 'live' ? Math.max(200, Math.round(w * 9 / 16)) + 'px' // 直播維持 16:9，不裁切播放器
     : Math.max(260, Math.round(w * 0.85)) + 'px';
   $('#app').classList.toggle('nosticky', window.innerHeight < 560);
@@ -391,7 +379,7 @@ function plaque(text, sub, a){
   p.className = 'plaque';
   p.innerHTML = esc(text) + (sub ? `<small>${esc(sub)}</small>` : '');
   p.classList.add(a && slotX(a.slot) < 50 ? 'l' : 'r');
-  p.style.bottom = (S.step === 'card' ? 52 : 34) + '%'; // 低於神將頭部的高度
+  p.style.bottom = '34%'; // 低於神將頭部的高度
   $('#scene').appendChild(p);
   requestAnimationFrame(() => p.classList.add('on'));
   plaqueUntil = Date.now() + 5200;
@@ -466,7 +454,6 @@ function render(){
   // 送祝福時一定回到殿前互動（照片模式），讓使用者看到自己的小人
   if (S.step !== 'home' && S.mode !== 'photo') setMode('photo');
   sizeMedia();
-  if (S.step === 'card' && yt && ytReady) { try { yt.pauseVideo(); } catch(e){} }
 
   if (S.step === 'home') {
     v.innerHTML = `
@@ -497,33 +484,22 @@ function render(){
           ${t.phrases.map(p => `<button type="button" class="slip" role="radio" aria-checked="${p===S.phrase}" data-p="${esc(p)}" ${S.sent?'disabled':''}>${esc(p)}${p===S.phrase&&!S.sent?'<span class="tick" aria-hidden="true">已選</span>':''}${p===S.phrase&&S.sent?'<span class="stamp" id="stamp">祝福<br>已送</span>':''}</button>`).join('')}
         </div>
       </section>`;
-    // 底部按鈕固定同一位置，只換文字：請先選一句 → 送出祝福 → 送出中… → 寫成祈福卡（失敗時：重試送出）
-    const label = S.sent ? '寫成祈福卡' : S.sending ? '送出中…' : S.failed ? '重試送出' : S.phrase ? '送出祝福' : '請先選一句';
-    d.innerHTML = `<button class="cta" id="send" type="button" ${(!S.phrase || S.sending) ? 'disabled' : ''}>${label}</button>`;
+    // 底部按鈕固定同一位置，只換文字：請先選一句 → 送出祝福 → 送出中… → 製作專屬祈福卡（失敗時：重試送出）
+    // 送出後直接前往原商品頁，不再多一頁；按鈕上方說明會自動複製祝福
+    if (S.sent) {
+      d.innerHTML = `<p class="dockhint">按下會<b>自動複製這句祝福</b>，下一頁貼上即可</p><button class="cta" id="apply" type="button">製作專屬祈福卡</button>`;
+      prefetchApply(t.apply);
+    } else {
+      const label = S.sending ? '送出中…' : S.failed ? '重試送出' : S.phrase ? '送出祝福' : '請先選一句';
+      d.innerHTML = `<button class="cta" id="send" type="button" ${(!S.phrase || S.sending) ? 'disabled' : ''}>${label}</button>`;
+    }
     v.querySelectorAll('.tabs button').forEach(b => b.onclick = () => { S.topic = CFG.topics.find(x => x.id === b.dataset.t); S.phrase = null; render(); });
     v.querySelectorAll('.slip').forEach(b => b.onclick = () => { S.phrase = b.dataset.p; S.failed = false; render(); });
     $('#back').onclick = () => { if (me) { leave(me, 0); me = null; } S.step = 'home'; S.sent = false; render(); window.scrollTo({ top:0, behavior:'smooth' }); };
-    $('#send').onclick = S.sent ? toCard : send;
+    if (S.sent) $('#apply').onclick = apply; else $('#send').onclick = send;
     const st = $('#stamp'); if (st && !S.stamped) { S.stamped = true; requestAnimationFrame(() => st.classList.add('on')); } else if (st) st.classList.add('on', 'still');
   }
 
-  if (S.step === 'card') {
-    const t = S.topic;
-    v.innerHTML = `
-      <section class="sec">
-        <div class="titlebar"><button class="backtop" type="button" id="back2">‹ 回殿前</button><h2 class="h2">寫成祈福卡</h2></div>
-        <div class="preview" aria-label="祈福卡預覽">
-          <div class="side">${esc(t.side)}</div>
-          <div class="body">北港朝天宮・文昌殿<b>${esc(S.phrase)}</b>祈福人：你的名字</div>
-          <span class="flag">預覽・尚未送出</span>
-        </div>
-        <details class="how2"><summary>怎麼做？</summary><p>填寫資料 › 選心意金 › 完成祈福</p></details>
-      </section>`;
-    d.innerHTML = `<p class="dockhint">按下會<b>自動複製這句祝福</b>，下一頁貼上即可</p><button class="cta" id="apply" type="button">製作專屬祈福卡</button>`;
-    $('#apply').onclick = apply;
-    prefetchApply(t.apply);
-    $('#back2').onclick = () => { if (me) { leave(me, 0); me = null; } S.step = 'home'; S.sent = false; S.phrase = null; S.wall = null; render(); window.scrollTo({ top:0, behavior:'smooth' }); };
-  }
   syncDock();
 }
 // 頁面底部留白跟著按鈕列實際高度走，首頁（有三步說明）和其他頁都不會多出空白
@@ -545,17 +521,16 @@ function send(){
     S.sending = false; S.sent = true; S.wall = 'waiting'; S.today.blessings++;
     if (!me || me.leaving) me = addActor({ mine:true });
     bow(me); plaque(S.phrase, '你的祝福', me);
-    render(); // 不自動跳頁：停在合掌這一刻，由使用者按「寫成祈福卡」
+    render(); // 不自動跳頁：停在合掌這一刻，由使用者按「製作專屬祈福卡」
   }, 450);
 }
-function toCard(){ S.step = 'card'; render(); window.scrollTo({ top:0, behavior:'smooth' }); }
 async function apply(){
   const btn = $('#apply'); btn.disabled = true; btn.textContent = '已複製祝福，前往中…';
   const copy = navigator.clipboard ? navigator.clipboard.writeText(S.phrase || '').catch(() => {}) : Promise.resolve();
   await Promise.race([copy, new Promise(r => setTimeout(r, 250))]); // 複製最多等 0.25 秒就出發
   location.href = S.topic.apply;
 }
-// 進入寫卡頁就先預載商品填寫頁，按下去時比較快
+// 送出祝福後就先預載商品填寫頁，按下去時比較快
 function prefetchApply(url){
   if (document.querySelector(`link[rel=prefetch][href="${url}"]`)) return;
   const l = document.createElement('link'); l.rel = 'prefetch'; l.href = url; document.head.appendChild(l);
