@@ -60,7 +60,10 @@ button{font:inherit;color:inherit}
 .plaque.arrive{font:700 2.3cqw/1.3 var(--sans);color:var(--wood);padding:.8cqw 1.5cqw}
 
 /* 集氣：只在被集氣的那張卡自己身上，「+1 集氣」放在左側插畫區下方，不蓋姓名與心願 */
-.card{position:absolute;width:32%;height:12%;border-radius:.6cqw;cursor:pointer}
+.card{position:absolute;width:32%;height:12%;border-radius:.6cqw;cursor:pointer;background:url("dajia-wall.jpg") no-repeat;background-size:312.5% 833.33%}
+/* 翻頁：卡面先蓋上紙色再換下一頁，不為集氣跳頁 */
+.card::before{content:"";position:absolute;inset:0;border-radius:.6cqw;background:#EFE4D2;opacity:0;transition:opacity .4s var(--ease)}
+#cards.flip .card::before{opacity:1}
 .card::after{content:"";position:absolute;inset:-.3cqw;border:.45cqw solid #FFD66B;border-radius:.9cqw;box-shadow:0 0 2.4cqw rgba(255,214,107,.75);opacity:0;transition:opacity .2s}
 .card.lit::after{opacity:1;transition-duration:.2s}
 .cheer1{position:absolute;left:17.5%;bottom:9%;translate:-50% 0;padding:.6cqw 1.6cqw;border:.3cqw solid #FFD66B;border-radius:99px;background:var(--red);color:#FFF6E2;font:700 2.6cqw/1.2 var(--sans);white-space:nowrap;box-shadow:0 .5cqw 1.2cqw rgba(0,0,0,.35);opacity:0;transform:translateY(30%) scale(.8)}
@@ -92,6 +95,9 @@ button{font:inherit;color:inherit}
 .rules li{display:flex;gap:10px}
 .rules li::before{content:"";flex:0 0 6px;height:6px;margin-top:9px;border-radius:50%;background:var(--gold)}
 .log{margin-top:18px;min-height:44px;font-size:14px;color:#FFD66B}
+.pager{margin:14px 0 0;font-size:14px;color:#D8CCBE}
+.pager b{color:var(--paper)}
+.pager i{font-style:normal;color:#FFD66B}
 
 @media (max-width:820px){
   .page{flex-direction:column;gap:24px;padding:16px}
@@ -123,9 +129,11 @@ button{font:inherit;color:inherit}
       <button class="btn" id="bOpen" type="button"><b>有人掃碼開頁</b><span>小香客走進殿前，站著等</span></button>
       <button class="btn" id="bSend" type="button"><b>有人送出祝福</b><span>合掌低頭，出現那句祝福，約 6 秒後離開</span></button>
       <button class="btn" id="bBurst" type="button"><b>同時很多人送祝福</b><span>最多 8 位，其餘合併成「另有 N 份」</span></button>
-      <button class="btn" id="bCheer" type="button"><b>有人為上牆心願集氣</b><span>那張卡亮起「+1 集氣」約 1.5 秒；也可以直接點牆上的卡</span></button>
+      <button class="btn" id="bCheer" type="button"><b>有人為上牆心願集氣</b><span>隨機一頁的一張卡；在這頁就馬上亮，在別頁就先累積。也可以直接點牆上的卡</span></button>
       <button class="btn" id="bCheerMany" type="button"><b>同一張卡連續被集氣</b><span>10 秒內只演一次，期間的集氣結束後合併成「+N」</span></button>
+      <button class="btn" id="bCheerPages" type="button"><b>不同頁的卡同時被集氣</b><span>這頁的卡馬上亮；別頁的先累積，輪到那頁時亮起「+N」</span></button>
     </div>
+    <p class="pager" id="pager" aria-live="polite"></p>
 
     <div class="switches">
       <label class="switch"><span>只看主視覺（放大）</span><input type="checkbox" id="sZoom"><i></i></label>
@@ -139,6 +147,7 @@ button{font:inherit;color:inherit}
       <li>每次最長 8 秒，同時最多 8 位</li>
       <li>牆上不標「你」，也不顯示地區</li>
       <li>集氣只在那張卡自己身上短暫出現，不常駐數字、不排行</li>
+      <li>卡在別頁時不跳頁、不插隊，輪到那頁才亮起累積的「+N」</li>
     </ul>
     <p class="log" id="log" role="status" aria-live="polite"></p>
   </aside>
@@ -272,47 +281,95 @@ function clearAll(){
 }
 
 /* 集氣：手機對「此刻在這面牆上」的付費卡集氣，後端確認後牆面那張卡亮起 +1 */
-// 12 張卡在牆上的位置（整面牆的百分比，3 欄 × 4 列）
-const CARDS = [];
-[47.0, 60.4, 73.8, 87.25].forEach(top => [0.71, 34.04, 67.29].forEach(left => CARDS.push({ top, left })));
-const COOL = 10000;
-CARDS.forEach((c, i) => {
+// 卡牆有多頁，每頁 12 張（3 欄 × 4 列，位置為整面牆的百分比）。示範用同一批卡換排列當作第 2、3 頁
+const SLOTS12 = [];
+[47.0, 60.4, 73.8, 87.25].forEach(top => [0.71, 34.04, 67.29].forEach(left => SLOTS12.push({ top, left })));
+const PAGES = [
+  [0,1,2,3,4,5,6,7,8,9,10,11],
+  [7,10,1,11,2,8,4,0,9,5,3,6],
+  [5,3,9,6,11,0,10,8,2,4,7,1]
+];
+const PAGE_MS = 15000;       // 示範用每頁 15 秒（正式依牆端設定）
+const COOL = 10000;          // 同一張卡 10 秒內只演一次
+const FIRST = 1000, GAP = 400; // 翻到那頁後 1 秒開始演，同頁多張依序間隔 0.4 秒
+let page = 0, pageT = null;
+// 每張卡（頁＋格）各自的冷卻與累積
+const CARD = PAGES.map((_, p) => SLOTS12.map((_, s) => ({ p, s, until:0, pending:0, t:null })));
+const els = SLOTS12.map((pos, s) => {
   const el = document.createElement('div');
-  el.className = 'card'; el.style.top = c.top + '%'; el.style.left = c.left + '%';
+  el.className = 'card'; el.style.top = pos.top + '%'; el.style.left = pos.left + '%';
   el.innerHTML = '<span class="cheer1"></span>';
-  el.onclick = () => { setAuto(false); cheer(i); };
+  el.onclick = () => { setAuto(false); cheer(page, s); };
   $('#cards').appendChild(el);
-  Object.assign(c, { el, until:0, pending:0, t:null });
+  return el;
 });
+function paintPage(){
+  PAGES[page].forEach((src, s) => {
+    const o = SLOTS12[src];
+    els[s].style.backgroundPosition = `${o.left / 68 * 100}% ${o.top / 88 * 100}%`;
+  });
+  renderPager();
+}
+function renderPager(){
+  const waiting = CARD.map(row => row.reduce((n, c) => n + c.pending, 0));
+  $('#pager').innerHTML = `牆上現在：<b>第 ${page + 1}／${PAGES.length} 頁</b>` +
+    waiting.map((n, p) => n && p !== page ? `　<i>第 ${p + 1} 頁待亮 ${n}</i>` : '').join('');
+}
+function flipPage(){
+  $('#cards').classList.add('flip');
+  setTimeout(() => {
+    els.forEach(el => { el.classList.remove('lit'); el.querySelector('.cheer1').classList.remove('on'); });
+    page = (page + 1) % PAGES.length; paintPage();
+    $('#cards').classList.remove('flip');
+    // 輪到這頁：把在別頁時累積的集氣，依格子順序一張接一張亮起「+N」
+    const due = CARD[page].filter(c => c.pending && Date.now() >= c.until);
+    due.forEach((c, k) => setTimeout(() => { if (page === c.p && c.pending) { const n = c.pending; c.pending = 0; playCheer(c, n); renderPager(); } }, FIRST + k * GAP));
+    if (due.length) log(`翻到第 ${page + 1} 頁：${due.length} 張卡依序亮起累積的集氣`);
+  }, 400);
+  pageT = setTimeout(flipPage, PAGE_MS);
+}
 function playCheer(c, n){
-  const b = c.el.querySelector('.cheer1');
+  const el = els[c.s], b = el.querySelector('.cheer1');
   b.textContent = `+${n} 集氣`;
   b.classList.remove('on'); void b.offsetWidth; b.classList.add('on');
-  c.el.classList.add('lit'); setTimeout(() => c.el.classList.remove('lit'), 1500);
+  el.classList.add('lit'); setTimeout(() => el.classList.remove('lit'), 1500);
   c.until = Date.now() + COOL;
-  // 冷卻結束時，把期間累積的集氣合併演一次
+  // 冷卻結束時，把期間累積的集氣合併演一次；卡片已翻走就留到下次輪到
   clearTimeout(c.t);
-  c.t = setTimeout(() => { if (c.pending) { const k = c.pending; c.pending = 0; playCheer(c, k); } }, COOL);
+  c.t = setTimeout(() => { if (c.pending && page === c.p) { const k = c.pending; c.pending = 0; playCheer(c, k); renderPager(); } }, COOL);
 }
-function cheer(i){
+// 集氣（後端確認成功後才會送到牆面）：p＝卡在第幾頁，s＝格子
+function cheer(p, s){
   if (S.off) { log('浮層已停用，牆面維持原畫面'); return; }
-  const c = CARDS[i ?? Math.floor(Math.random() * CARDS.length)];
-  if (Date.now() < c.until) { c.pending++; log(`集氣｜這張卡冷卻中，先累積 ${c.pending} 份，10 秒到再合併顯示`); return; }
+  p = p ?? Math.floor(Math.random() * PAGES.length);
+  s = s ?? Math.floor(Math.random() * 12);
+  const c = CARD[p][s];
+  if (p !== page) { c.pending++; renderPager(); log(`集氣｜這張卡在第 ${p + 1} 頁，不跳頁，先累積；輪到第 ${p + 1} 頁時亮起`); return; }
+  if (Date.now() < c.until) { c.pending++; renderPager(); log(`集氣｜這張卡冷卻中，先累積 ${c.pending} 份，10 秒到再合併顯示`); return; }
   playCheer(c, 1);
-  log('集氣｜後端確認成功：那張卡亮起「+1 集氣」');
+  log('集氣｜卡片就在這頁：馬上亮起「+1 集氣」');
 }
 function cheerMany(){
-  const i = Math.floor(Math.random() * CARDS.length);
-  for (let k = 0; k < 4; k++) setTimeout(() => cheer(i), k * 700);
+  const s = Math.floor(Math.random() * 12);
+  for (let k = 0; k < 4; k++) setTimeout(() => cheer(page, s), k * 700);
 }
+// 不同頁同時被集氣：這頁 2 張、其他頁各 2 張
+function cheerPages(){
+  const others = PAGES.map((_, p) => p).filter(p => p !== page);
+  [[page, 1], [page, 8], [others[0], 4], [others[0], 10], [others[1], 2], [others[1], 7]]
+    .forEach(([p, s], k) => setTimeout(() => cheer(p, s), k * 250));
+  setTimeout(() => log('這頁的 2 張已亮；其他頁的 4 張先累積，輪到那頁時才亮'), 1700);
+}
+paintPage();
+pageT = setTimeout(flipPage, PAGE_MS);
 
 /* 自動示範：開頁 → 送祝福 → 有人開頁沒送就走 → 集氣 → 多人合併 → 安靜一段時間 */
 const SCRIPT = [
   [1500, open], [3800, send],
   [9000, open], [2500, send], [1200, open],
   [8000, send],
-  [4000, () => cheer()], [3500, () => cheer()],
-  [5000, burst],
+  [4000, () => cheer(page)], [3500, cheerPages],
+  [6000, burst],
   [12000, cheerMany],
   [14000, () => log('沒有事件時，牆面就是原本的主視覺')]
 ];
@@ -331,9 +388,10 @@ function setAuto(on){
 }
 
 $('#bAuto').onclick = () => setAuto(!S.auto);
-['#bOpen','#bSend','#bBurst','#bCheer','#bCheerMany'].forEach(id => $(id).addEventListener('click', () => setAuto(false)));
+['#bOpen','#bSend','#bBurst','#bCheer','#bCheerMany','#bCheerPages'].forEach(id => $(id).addEventListener('click', () => setAuto(false)));
 $('#bCheer').addEventListener('click', () => cheer());
 $('#bCheerMany').addEventListener('click', cheerMany);
+$('#bCheerPages').addEventListener('click', cheerPages);
 $('#bOpen').addEventListener('click', open);
 $('#bSend').addEventListener('click', send);
 $('#bBurst').addEventListener('click', burst);

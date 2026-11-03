@@ -118,6 +118,7 @@ button{font:inherit;color:inherit}
 .wmeta{display:flex;align-items:center;gap:8px;font-size:14px;font-weight:500;color:var(--muted)}
 .wtype{padding:1px 8px;border:1px solid #D9B9AE;border-radius:4px;color:var(--red);font-weight:700;background:#F7EDE8}
 .wish p{flex:1}
+.wpage{margin-left:auto;font-size:13px;white-space:nowrap}
 /* 集氣：次要按鈕，不跟底部主按鈕搶 */
 .wfoot{display:flex;align-items:center;flex-wrap:wrap;gap:4px 10px}
 .cheer{min-height:44px;padding:0 16px;border:1.5px solid var(--red);border-radius:22px;background:var(--paper);color:var(--red);font-size:15px;font-weight:700;cursor:pointer;transition:background .15s,transform .15s var(--ease)}
@@ -245,6 +246,9 @@ const WALL_CARDS = [
   { id:'c11', type:'金榜題名卡', name:'小雅',   w:'願孫子會考順利，讀書專注' },
   { id:'c12', type:'業績長紅卡', name:'劉俊傑', w:'願開店順利，客人吃得歡喜' }
 ];
+WALL_CARDS.forEach((c, i) => { c.page = i % 3 + 1; }); // 卡在牆上的第幾頁（之後由牆端翻頁時回報）
+// 牆上目前第幾頁：正式版由牆端每次翻頁回報後端；這裡用時間模擬每 15 秒翻一頁
+const wallPage = () => Math.floor(Date.now() / 15000) % 3 + 1;
 const HOME_CARDS = 3; // 首頁先列 3 張，其餘按「查看全部」在同一頁展開
 // 祈福人：暱稱照牆上原樣顯示；只有真名才隱碼（2 字 陳○、3 字 王○明、4 字留頭尾、英文只留首字母）；選匿名＝匿名祈福人
 // 正式版請以表單或後端的 name_kind（real／nickname）判斷；沒有欄位時才用下面的規則推測，推測不出來一律當真名隱碼
@@ -565,11 +569,11 @@ function wishCard(c){
   const st = cheered.has(c.id) ? 'done' : (S.cheer[c.id] || 'idle');
   const label = { idle:'為他集氣', busy:'集氣中…', done:'你已集氣', fail:'未成功，請再試一次' }[st];
   return `<article class="wish" data-id="${c.id}">
-    <div class="wmeta"><span class="wtype">${esc(c.type)}</span><span>${esc(maskName(c))}</span></div>
+    <div class="wmeta"><span class="wtype">${esc(c.type)}</span><span>${esc(maskName(c))}</span><span class="wpage">牆上第 ${c.page} 頁</span></div>
     <p>${esc(c.w)}</p>
     <div class="wfoot">
       <button class="cheer ${st}" type="button" data-id="${c.id}" ${st === 'busy' || st === 'done' ? 'disabled' : ''} aria-live="polite">${label}</button>
-      ${st === 'done' && S.justCheered === c.id ? '<span class="look">抬頭看牆，這張卡會亮起 +1</span>' : ''}
+      ${st === 'done' && S.justCheered === c.id ? `<span class="look">${S.cheerPage === c.page ? '抬頭看牆，這張卡正亮起 +1' : `這張卡在第 ${c.page} 頁，輪到時會亮起 +1`}</span>` : ''}
     </div>
   </article>`;
 }
@@ -584,7 +588,8 @@ function cheer(id){
   S.cheer[id] = 'busy'; paintCard(id);
   // 後端寫入成功才算數，也才通知牆面播「+1 集氣」；失敗時按鈕恢復可再按
   setTimeout(() => {
-    cheered.add(id); saveCheered(); S.cheer[id] = 'done'; S.justCheered = id; paintCard(id);
+    // 依按下當下牆面在第幾頁決定提示：在這頁就叫人抬頭看，在別頁就說輪到時會亮
+    cheered.add(id); saveCheered(); S.cheer[id] = 'done'; S.justCheered = id; S.cheerPage = wallPage(); paintCard(id);
   }, 500);
 }
 
